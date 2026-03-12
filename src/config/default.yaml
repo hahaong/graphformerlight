@@ -1,0 +1,34 @@
+# --- Defaults --- load first
+csv_name: "TrainingDefault_VDN_Jinan_1"
+
+# --- pymarl options ---
+runner: "episode" # Runs 1 env for an episode
+mac: "basic_mac" # Basic controller
+env: "sumo" # Environment name
+test_nepisode : 1000 #test every 10 epochs
+num_epochs : 1 # inner training loop
+env_args: {} # Arguments for the environment
+buffer_cpu_only: False # If true we won't keep all of the replay buffer in vram
+
+use_cuda: True # Use gpu by default unless it isn't available
+
+# --- Logging options ---
+checkpoint_path: "" # Load a checkpoint from this path
+
+# --- RL hyperparameters ---
+gamma: 0.99
+batch_size: 4 # Number of episodes to train on
+buffer_size: 100000 # Size of the replay buffer
+lr: 0.0005 # Learning rate for agents
+critic_lr: 0.0005 # Learning rate for critics
+optim_alpha: 0.99 # RMSProp alpha
+optim_eps: 0.00001 # RMSProp epsilon
+grad_norm_clip: 10
+
+
+
+# --- Agent parameters ---
+agent: "rnn" # Default rnn agent, can choose mlp or rnn
+rnn_hidden_dim: 64 # Size of hidden state for default rnn agent
+obs_agent_id: True # Include the agent's one_hot id in the observation
+obs_last_action: False # Include the agent's last action (one_hot) in the observation

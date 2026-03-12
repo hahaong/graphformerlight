@@ -1,0 +1,22 @@
+# --- Centralized DQN specific parameters ---
+
+# use epsilon greedy action selector
+action_selector: "epsilon_greedy"
+epsilon_start: 1.0
+epsilon_finish: 0.05
+epsilon_anneal_time_ratio: 0.5 # fully decay at total timesteps * ratio
+
+
+runner: "episode"
+
+
+# update the target network through soft update
+tau: 0.005
+
+# use the Q_Learner to train
+agent_output_type: "q"
+learner: "q_learner"
+double_q: False
+mixer:
+
+name: "centralized_DQN"

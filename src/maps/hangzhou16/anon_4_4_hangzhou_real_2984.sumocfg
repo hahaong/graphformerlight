@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+	<input>
+		<net-file value="anon_4_4_hangzhou_real_2984.net.xml"/>
+		<route-files value="anon_4_4_hangzhou_real_2984.rou.xml"/>
+	</input>
+	<time>
+		<begin value="0"/>
+		<end value="3600"/>
+	</time>
+</configuration>

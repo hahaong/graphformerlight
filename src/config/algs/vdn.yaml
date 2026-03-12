@@ -1,0 +1,29 @@
+# --- VDN specific parameters ---
+
+# use epsilon greedy action selector
+action_selector: "epsilon_greedy"
+epsilon_start: 1.0
+epsilon_finish: 0.05
+#epsilon_anneal_time_ratio: 0.5 # fully decay at total timesteps * ratio
+epsilon_anneal_time: 108000 #  0.5 * total timestep
+
+runner: "episode"
+
+buffer_size: 300
+
+# update the target network every {} episodes
+#tau: 0.005
+target_update_interval: 50
+
+# use the Q_Learner to train
+agent_output_type: "q"
+learner: "q_learner"
+double_q: False
+mixer: "vdn"
+
+name: "vdn"
+
+
+
+
+

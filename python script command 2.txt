@@ -1,0 +1,115 @@
+cd /root/autodl15_predseeds/src
+
+screen -S graphmix_numrun1_pred_1_jinan12_6269
+screen -S graphmix_numrun2_pred_1_jinan12_6269
+screen -S graphmix_numrun3_pred_1_jinan12_6269
+
+python main.py --csv_name graphmix_numrun1_pred_1_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+python main.py --csv_name graphmix_numrun2_pred_1_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+python main.py --csv_name graphmix_numrun3_pred_1_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+
+screen -S graphmix_numrun1_pred_2_jinan12_6269
+screen -S graphmix_numrun2_pred_2_jinan12_6269
+screen -S graphmix_numrun3_pred_2_jinan12_6269
+
+python main.py --csv_name graphmix_numrun1_pred_2_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --informer_pred_len 2 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+python main.py --csv_name graphmix_numrun2_pred_2_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --informer_pred_len 2 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+python main.py --csv_name graphmix_numrun3_pred_2_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --informer_pred_len 2 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+
+python main.py --csv_name graphmix_numrun1_pred_3_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --informer_pred_len 3 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+python main.py --csv_name graphmix_numrun2_pred_3_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --informer_pred_len 3 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+python main.py --csv_name graphmix_numrun3_pred_3_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --informer_pred_len 3 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+
+python main.py --csv_name graphmix_numrun1_pred_4_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --informer_pred_len 4 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+python main.py --csv_name graphmix_numrun2_pred_4_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --informer_pred_len 4 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+python main.py --csv_name graphmix_numrun3_pred_4_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --informer_pred_len 4 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+
+python main.py --csv_name graphmix_numrun1_pred_5_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --informer_pred_len 5 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+python main.py --csv_name graphmix_numrun2_pred_5_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --informer_pred_len 5 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+python main.py --csv_name graphmix_numrun3_pred_5_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --informer_pred_len 5 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+
+python main.py --csv_name graphmix_numrun1_pred_6_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --informer_pred_len 6 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+python main.py --csv_name graphmix_numrun2_pred_6_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --informer_pred_len 6 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+python main.py --csv_name graphmix_numrun3_pred_6_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --informer_pred_len 6 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+
+hangzhou16
+
+screen -S graphmix_numrun1_pred_1_hangzhou16_6985
+screen -S graphmix_numrun2_pred_1_hangzhou16_6985
+screen -S graphmix_numrun3_pred_1_hangzhou16_6985
+
+python main.py --csv_name graphmix_numrun1_pred_1_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 1 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml
+python main.py --csv_name graphmix_numrun2_pred_1_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 1 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml
+python main.py --csv_name graphmix_numrun3_pred_1_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 1 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+
+python main.py --csv_name graphmix_numrun4_pred_1_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 1 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+python main.py --csv_name graphmix_numrun5_pred_1_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 1 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+python main.py --csv_name graphmix_numrun6_pred_1_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 1 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+python main.py --csv_name graphmix_numrun7_fullattn_pred_1_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 1 --full_attn --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+python main.py --csv_name graphmix_numrun8_fullattn_pred_1_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 1 --full_attn --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+python main.py --csv_name graphmix_numrun9_fullattn_pred_1_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 1 --full_attn --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+python main.py --csv_name graphmix_numrun11_fullattn_pred_1_temperature0.1_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 1 --full_attn --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+python main.py --csv_name graphmix_numrun12_fullattn_pred_1_temperature0.1_orthogonalweight_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 1 --full_attn --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+python main.py --csv_name graphmix_numrun13_fullattn_pred_1_temperature0.5_orthogonalweight_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 1 --full_attn --temperature_k 0.5 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+python main.py --csv_name graphmix_numrun14_fullattn_pred_1_temperature0.5_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 1 --full_attn --temperature_k 0.5 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+
+
+python main.py --csv_name graphmix_numrun1_3layers_pred_1_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 1 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml
+
+
+screen -S graphmix_numrun1_pred_2_hangzhou16_6985
+screen -S graphmix_numrun2_pred_2_hangzhou16_6985
+screen -S graphmix_numrun3_pred_2_hangzhou16_6985
+
+python main.py --csv_name graphmix_numrun1_pred_2_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 2 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml
+python main.py --csv_name graphmix_numrun2_pred_2_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 2 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml
+python main.py --csv_name graphmix_numrun3_pred_2_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 2 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+
+screen -S graphmix_numrun1_pred_3_hangzhou16_6985
+screen -S graphmix_numrun2_pred_3_hangzhou16_6985
+screen -S graphmix_numrun3_pred_3_hangzhou16_6985
+
+python main.py --csv_name graphmix_numrun1_pred_3_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 3 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml
+python main.py --csv_name graphmix_numrun2_pred_3_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 3 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml
+python main.py --csv_name graphmix_numrun3_pred_3_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 3 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+
+screen -S graphmix_numrun1_pred_4_hangzhou16_6985
+screen -S graphmix_numrun2_pred_4_hangzhou16_6985
+screen -S graphmix_numrun3_pred_4_hangzhou16_6985
+
+python main.py --csv_name graphmix_numrun1_pred_4_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 4 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml
+python main.py --csv_name graphmix_numrun2_pred_4_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 4 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml
+python main.py --csv_name graphmix_numrun3_pred_4_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 4 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+
+screen -S graphmix_numrun1_pred_5_hangzhou16_6985
+screen -S graphmix_numrun2_pred_5_hangzhou16_6985
+screen -S graphmix_numrun3_pred_5_hangzhou16_6985
+
+python main.py --csv_name graphmix_numrun1_pred_5_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 5 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml
+python main.py --csv_name graphmix_numrun2_pred_5_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 5 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml
+python main.py --csv_name graphmix_numrun3_pred_5_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 5 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+
+screen -S graphmix_numrun1_pred_6_hangzhou16_6985
+screen -S graphmix_numrun2_pred_6_hangzhou16_6985
+screen -S graphmix_numrun3_pred_6_hangzhou16_6985
+
+python main.py --csv_name graphmix_numrun1_pred_6_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 6 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml
+python main.py --csv_name graphmix_numrun2_pred_6_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 6 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml
+python main.py --csv_name graphmix_numrun3_pred_6_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --informer_pred_len 6 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+
+
+
+#Test 3 layer heat map
+
+screen -S graphmix_numrun1_pred_1_3layer_jinan12_6269
+
+python main.py --csv_name graphmix_numrun1_3layer_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --mixing_embed_dim 64 64 64 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+python main.py --csv_name graphmix_numrun2_3layer_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --mixing_embed_dim 64 64 64 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+python main.py --csv_name graphmix_numrun3_3layer_jinan12_6269 --config graphmix --adj_mask_file maps/jinan12/anon_3_4_jinan_real.csv --seq2seq --on_policy_learning --mixing_embed_dim 64 64 64 --net_file maps/jinan12/anon_3_4_jinan_real_6269.net.xml --route_file maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
+
+screen -S graphmix_numrun1_pred_1_3layer_hangzhou16_6985
+
+python main.py --csv_name graphmix_numrun1_3layer_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --mixing_embed_dim 64 64 64 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml
+python main.py --csv_name graphmix_numrun2_3layer_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --mixing_embed_dim 64 64 64 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml
+python main.py --csv_name graphmix_numrun3_3layer_hangzhou16_6985 --config graphmix --adj_mask_file maps/hangzhou16/anon_4_4_hangzhou_real.csv --seq2seq --on_policy_learning --mixing_embed_dim 64 64 64 --net_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.net.xml --route_file maps/hangzhou16/anon_4_4_hangzhou_real_6985.rou.xml 
+

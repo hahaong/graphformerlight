@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+	<input>
+		<net-file value="syn_2x2.net.xml"/>
+		<route-files value="syn_2x2.rou.xml"/>
+	</input>
+	<time>
+		<begin value="0"/>
+		<end value="3600"/>
+	</time>
+</configuration>
