@@ -54,6 +54,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--config', type=str, default="graphmix",
                         help='type of algorithms, iql, vdn, qtran, qmix or graphmix')
+    parser.add_argument('--mlporrnn', type=str, default="rnn",
+                        help='choose mlp or rnn as agent')
     parser.add_argument('--env_config', type=str, default="sumo",
                         help='sumo config file')
     parser.add_argument('--informer_process_obs_ways', type=str, default="concat",
@@ -65,13 +67,16 @@ if __name__ == '__main__':
     parser.add_argument('--informer_pred_len', type=int, default=1,
                         help='predict pred_len amount of time-series data')
     parser.add_argument('--global_state_setting_num', type=int, default=2,
-                        help='can set 0,1,2 or 3. 0 means all lanes is concatenate, 1 only consider approach based for example junction1 has 4 approaches, 2 consider traffic light approach, 3 add gradunality by considering seperate opposite vehicle movemnt')
+                        help='can set 0,1,2. 0 means all lanes is concatenate, 1 only consider approach based for example junction1 has 4 approaches, 2 consider traffic light approach')
     parser.add_argument('--on_policy_learning', action="store_true",
                         help='on-policy or off-policy learning scheme, default is on-policy')
     parser.add_argument('--full_attn', action="store_true",
                         help='apply full attention matrix on the GNN, otherwise use masking to mask out disconnected junction, default is mask_attn')
     parser.add_argument('--mixing_embed_dim', nargs='+', type=int, default=[64],help='List of integers (default: [64])')
-    parser.add_argument('--temperature_k', type=float, default=0.5,help='temperature parameter for GAT')
+    parser.add_argument('--temperature_k', type=float, default=0.8,help='temperature parameter for GAT')
+    parser.add_argument('--lambda_local', type=float, default=1,help='to include local fraction reward, 1 means fully include, 0 means only using global reward (after passing GNN)')
+    parser.add_argument('--dqn', action="store_true",help='if it is dqn, disable ddqn')
+
 
     args = parser.parse_args()
     net_file = args.net_file
@@ -80,6 +85,7 @@ if __name__ == '__main__':
     csv_name = args.csv_name
     seq2seq = args.seq2seq
     config = args.config
+    mlporrnn = args.mlporrnn
     env_config = args.env_config
     informer_process_obs_ways = args.informer_process_obs_ways
     informer_seq_len = args.informer_seq_len
@@ -90,7 +96,12 @@ if __name__ == '__main__':
     full_attn = args.full_attn
     mixing_embed_dim=args.mixing_embed_dim
     temperature_k=args.temperature_k
-
+    lambda_local=args.lambda_local
+    dqn=args.dqn
+    if dqn == True:
+        double_q = False
+    else:
+        double_q = True
 
     params = deepcopy(sys.argv)
     # params.extend(["--env-config=sumo"]) # choose sumo as the environment
@@ -104,6 +115,7 @@ if __name__ == '__main__':
         except yaml.YAMLError as exc:
             assert False, "default.yaml error: {}".format(exc)
     config_dict["seq2seq"] = seq2seq
+    config_dict["agent"] = mlporrnn
     config_dict["informer_process_obs_ways"] = informer_process_obs_ways
     config_dict["informer_seq_len"] = informer_seq_len
     config_dict["informer_label_len"] = informer_label_len
@@ -121,6 +133,8 @@ if __name__ == '__main__':
     alg_config["mixing_embed_dim"] = mixing_embed_dim
     alg_config['full_attn'] = full_attn
     alg_config['temperature_k'] = temperature_k
+    alg_config['lambda_local'] = lambda_local
+    alg_config['double_q'] = double_q
     # config_dict = {**config_dict, **env_config, **alg_config}
 
 

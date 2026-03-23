@@ -115,6 +115,18 @@ class TrafficSignal:
         self.observation_space = self.observation_fn.observation_space()
         self.action_space = spaces.Discrete(self.num_green_phases)
 
+    def get_avail_actions(self):
+        """
+        Returns a list of 1s (valid) and 0s (invalid).
+        Example for a 3-phase junction in a max 4-phase network: [1, 1, 1, 0]
+        """
+        if not hasattr(self, "max_actions"):
+            # Fallback if called before max_actions is assigned
+            return [1] * self.num_green_phases
+
+        avail_actions = [1] * self.num_green_phases + [0] * (self.max_actions - self.num_green_phases)
+        return avail_actions
+
     def _build_phases(self):
         phases = self.sumo.trafficlight.getAllProgramLogics(self.id)[0].phases
         if self.env.fixed_ts:
@@ -172,6 +184,13 @@ class TrafficSignal:
         Args:
             new_phase (int): Number between [0 ... num_green_phases]
         """
+
+        # --- ADD SAFEGUARD FOR HETEROGENEOUS NETWORKS ---
+        # if new_phase >= self.num_green_phases:
+            # If the agent attempts to select an invalid padded phase, default to the last valid phase
+            # new_phase = self.num_green_phases - 1
+        # ------------------------------------------------
+
         new_phase = int(new_phase)
         if self.green_phase == new_phase or self.time_since_last_phase_change < self.yellow_time + self.min_green: # new phase is same as current or enter green phase after last yellow phase
             # self.sumo.trafficlight.setPhase(self.id, self.green_phase)

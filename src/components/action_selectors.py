@@ -41,12 +41,12 @@ class EpsilonGreedyActionSelector():
                                               decay="linear")
         self.epsilon = self.schedule.eval(0)
 
-    def select_action(self, agent_inputs, t_env, test_mode=False):
-        avail_actions = self.args.avail_actions # 4
-        avail_actions = [1 for action in range(avail_actions)] # [1,1,1,1]
-        avail_actions = th.tensor(avail_actions).unsqueeze(0).unsqueeze(0) # (1,1,4)
-        avail_actions = avail_actions.expand_as(agent_inputs) # (b,num_agent,action_dim)
-        avail_actions = avail_actions.to(agent_inputs.device)
+    def select_action(self, agent_inputs, avail_actions, t_env, test_mode=False):
+        # avail_actions = self.args.avail_actions # 4
+        # avail_actions = [1 for action in range(avail_actions)] # [1,1,1,1]
+        # avail_actions = th.tensor(avail_actions).unsqueeze(0).unsqueeze(0) # (1,1,4)
+        # avail_actions = avail_actions.expand_as(agent_inputs) # (b,num_agent,action_dim)
+        # avail_actions = avail_actions.to(agent_inputs.device)
 
         # Assuming agent_inputs is a batch of Q-Values for each agent bav
         self.epsilon = self.schedule.eval(t_env)
@@ -56,8 +56,8 @@ class EpsilonGreedyActionSelector():
             self.epsilon = 0.0
 
         # mask actions that are excluded from selection
-        # masked_q_values = agent_inputs.clone()
-        # masked_q_values[avail_actions == 0.0] = -float("inf")  # should never be selected!
+        masked_q_values = agent_inputs.clone()
+        masked_q_values[avail_actions == 0.0] = -float("inf")  # should never be selected!
 
         random_numbers = th.rand_like(agent_inputs[:, :, 0])
         pick_random = (random_numbers < self.epsilon).long()

@@ -617,7 +617,7 @@ def run_sequential(args):
     runner = r_REGISTRY[args.runner](args=args)
 
     # Set up schemes and groups here
-    env_info = runner.get_env_info()
+    env_info = runner.get_env_info(args.global_state_setting_num)
     args.n_agents = env_info["n_agents"]
     args.n_actions = env_info["n_actions"] # per agent
     args.avail_actions = env_info["n_actions"] # for example [4], got 4 possible action
@@ -636,6 +636,11 @@ def run_sequential(args):
             "informer_obs": {"vshape": env_info["obs_shape"], "group": "agents"}, # original obs shape feed for informer
             "next_obs": {"vshape": env_info["obs_shape"]*informer_obs_duplicate_time, "group": "agents"},
             "actions": {"vshape": env_info["n_actions_shape"], "group": "agents", "dtype": th.int64},
+            "avail_actions": {
+                "vshape": (env_info["n_actions"],),
+                "group": "agents",
+                "dtype": th.int64
+            },
             "actions_onehot":{"vshape": (env_info["n_actions"],), "group": "agents", "dtype": th.uint8},
             "reward": {"vshape": (1,), "group": "agents"} if args.name == "iql" else {"vshape": (1,)}, # has independent reward and global_reward
             "done": {"vshape": (1,), "dtype": th.uint8},
@@ -646,6 +651,11 @@ def run_sequential(args):
             "obs": {"vshape": env_info["obs_shape"], "group": "agents"},  # Concatenate ways of informer
             "next_obs": {"vshape": env_info["obs_shape"], "group": "agents"},
             "actions": {"vshape": env_info["n_actions_shape"], "group": "agents", "dtype": th.int64},
+            "avail_actions": {
+                "vshape": (env_info["n_actions"],),
+                "group": "agents",
+                "dtype": th.int64
+            },
             "actions_onehot": {"vshape": (env_info["n_actions"],), "group": "agents", "dtype": th.uint8},
             "reward": {"vshape": (1,), "group": "agents"} if args.name == "iql" else {"vshape": (1,)},
             # has independent reward and global_reward
@@ -832,17 +842,17 @@ def run_sequential(args):
                 write.writerow([key]+value)
 
 
-        if avg_attention_score_csv_data and single_sample_attention_score_csv_data is not None:
+        if avg_attention_score_csv_data is not None:
             # Execute record attention value once in a while
             if ((episode + 1) % args.record_attention_interval) == 0:
                 print(args.record_attention_interval)
                 episode_list.append(episode)
                 avg_attention_score_2Dlist.append(avg_attention_score_csv_data)
-                single_sample_attention_score_2Dlist.append(single_sample_attention_score_csv_data)
-                single_sample_encoded_hidden_states_2Dlist.append(single_sample_encoded_hidden_states)
-                single_sample_attn_query_2Dlist.append(single_sample_attn_query)
-                single_sample_attn_key_2Dlist.append(single_sample_attn_key)
-                single_sample_attn_logit_2Dlist.append(single_sample_attn_logit)
+                # single_sample_attention_score_2Dlist.append(single_sample_attention_score_csv_data)
+                # single_sample_encoded_hidden_states_2Dlist.append(single_sample_encoded_hidden_states)
+                # single_sample_attn_query_2Dlist.append(single_sample_attn_query)
+                # single_sample_attn_key_2Dlist.append(single_sample_attn_key)
+                # single_sample_attn_logit_2Dlist.append(single_sample_attn_logit)
 
 
                 with open(f'csv_plot/{args.csv_name}_Attention_score.csv',
@@ -856,26 +866,26 @@ def run_sequential(args):
                         writer.writerow(header)
                         for row in avg_attention_score_2Dlist[i]:
                             writer.writerow(row)
-                        header = [f"Neighbor_{i}" for i in range(len(single_sample_attention_score_csv_data))] + ["Single Sample Attention Score"]
-                        writer.writerow(header)
-                        for row in single_sample_attention_score_2Dlist[i]:
-                            writer.writerow(row)
-                        header = [f"Neighbor_{i}" for i in range(len(single_sample_attention_score_csv_data))] + ["Single Sample encoded_hidden_states"]
-                        writer.writerow(header)
-                        for row in single_sample_encoded_hidden_states_2Dlist[i]:
-                            writer.writerow(row)
-                        header = [f"Neighbor_{i}" for i in range(len(single_sample_attention_score_csv_data))] + ["Single Sample attn_query"]
-                        writer.writerow(header)
-                        for row in single_sample_attn_query_2Dlist[i]:
-                            writer.writerow(row)
-                        header = [f"Neighbor_{i}" for i in range(len(single_sample_attention_score_csv_data))] + ["Single Sample attn_key"]
-                        writer.writerow(header)
-                        for row in single_sample_attn_key_2Dlist[i]:
-                            writer.writerow(row)
-                        header = [f"Neighbor_{i}" for i in range(len(single_sample_attention_score_csv_data))] + ["Single Sample attn_logit"]
-                        writer.writerow(header)
-                        for row in single_sample_attn_logit_2Dlist[i]:
-                            writer.writerow(row)
+                        # header = [f"Neighbor_{i}" for i in range(len(single_sample_attention_score_csv_data))] + ["Single Sample Attention Score"]
+                        # writer.writerow(header)
+                        # for row in single_sample_attention_score_2Dlist[i]:
+                        #     writer.writerow(row)
+                        # header = [f"Neighbor_{i}" for i in range(len(single_sample_attention_score_csv_data))] + ["Single Sample encoded_hidden_states"]
+                        # writer.writerow(header)
+                        # for row in single_sample_encoded_hidden_states_2Dlist[i]:
+                        #     writer.writerow(row)
+                        # header = [f"Neighbor_{i}" for i in range(len(single_sample_attention_score_csv_data))] + ["Single Sample attn_query"]
+                        # writer.writerow(header)
+                        # for row in single_sample_attn_query_2Dlist[i]:
+                        #     writer.writerow(row)
+                        # header = [f"Neighbor_{i}" for i in range(len(single_sample_attention_score_csv_data))] + ["Single Sample attn_key"]
+                        # writer.writerow(header)
+                        # for row in single_sample_attn_key_2Dlist[i]:
+                        #     writer.writerow(row)
+                        # header = [f"Neighbor_{i}" for i in range(len(single_sample_attention_score_csv_data))] + ["Single Sample attn_logit"]
+                        # writer.writerow(header)
+                        # for row in single_sample_attn_logit_2Dlist[i]:
+                        #     writer.writerow(row)
     runner.close_env()
 
 

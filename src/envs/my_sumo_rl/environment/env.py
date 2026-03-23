@@ -182,7 +182,34 @@ class SumoEnvironment(gym.Env):
                 )
                 for ts in self.ts_ids
             }
+        # Dynamically find the maximum number of phases across the entire network
+        self.max_actions = max([ts.num_green_phases for ts in self.traffic_signals.values()])
+        # Dynamically find the maximum observation dimension
+        self.max_obs_dim = max([ts.observation_space.shape[0] for ts in self.traffic_signals.values()])
+        # For Setting 0: Max approaching lanes across all agents
+        self.max_lanes = max([len(ts.lanes) for ts in self.traffic_signals.values()])
+        # For Setting 1: Max arms (edges) across all agents
+        self.max_arms = 0
+        for ts in self.traffic_signals.values():
+            # In SUMO, lane ID format is "edgeID_laneIndex". We extract the edge ID.
+            edges = set([lane.rsplit("_", 1)[0] for lane in ts.lanes])
+            if len(edges) > self.max_arms:
+                self.max_arms = len(edges)
 
+
+        # Standardize the action and observation spaces for all agents
+        for ts in self.traffic_signals.values():
+            ts.max_actions = self.max_actions
+            ts.max_obs_dim = self.max_obs_dim
+
+            # Unify action spaces
+            ts.action_space = gym.spaces.Discrete(self.max_actions)
+
+            # Unify observation spaces (values are between 0 and 1 if using QueueLengthNormalizedObservationFunction)
+            ts.observation_space = gym.spaces.Box(
+                low=np.zeros(self.max_obs_dim, dtype=np.float32),
+                high=np.ones(self.max_obs_dim, dtype=np.float32),
+            )
         conn.close()
 
         self.vehicles = dict()
@@ -282,6 +309,33 @@ class SumoEnvironment(gym.Env):
                 )
                 for ts in self.ts_ids
             }
+
+        # Dynamically find the maximum number of phases across the entire network
+        self.max_actions = max([ts.num_green_phases for ts in self.traffic_signals.values()])
+        # Dynamically find the maximum observation dimension
+        self.max_obs_dim = max([ts.observation_space.shape[0] for ts in self.traffic_signals.values()])
+        # For Setting 0: Max approaching lanes across all agents
+        self.max_lanes = max([len(ts.lanes) for ts in self.traffic_signals.values()])
+        # For Setting 1: Max arms (edges) across all agents
+        self.max_arms = 0
+        for ts in self.traffic_signals.values():
+            # In SUMO, lane ID format is "edgeID_laneIndex". We extract the edge ID.
+            edges = set([lane.rsplit("_", 1)[0] for lane in ts.lanes])
+            if len(edges) > self.max_arms:
+                self.max_arms = len(edges)
+        # Standardize the action and observation spaces for all agents
+        for ts in self.traffic_signals.values():
+            ts.max_actions = self.max_actions
+            ts.max_obs_dim = self.max_obs_dim
+
+            # Unify action spaces
+            ts.action_space = gym.spaces.Discrete(self.max_actions)
+
+            # Unify observation spaces (values are between 0 and 1 if using QueueLengthNormalizedObservationFunction)
+            ts.observation_space = gym.spaces.Box(
+                low=np.zeros(self.max_obs_dim, dtype=np.float32),
+                high=np.ones(self.max_obs_dim, dtype=np.float32),
+            )
 
         self.vehicles = dict()
 
@@ -553,75 +607,145 @@ class SumoEnvironmentPZ(AECEnv, EzPickle):
         """Return the action space for the agent."""
         return self.action_spaces[agent]
 
-    def get_state(self,setting_num=1): # Ong Customized for get_queue_length_normalized, setting_num can set for 0,1,2
-        # 3 settings,
-        # first setting: seperate every lanes, so every agent has 12 lane
-        # second setting: sum every approach, every agent has 4 approach
-        # thrid setting: divide appraoch using phase, also has 4 approaches same as second setting, but is phase focused, for example first phase take care of lane 2,3,8,9. first phase will sum the lanes density. So state for junction1 is 4
-        # fourth setting: more gruadunility compared to third setting, state for junction1 is 8, because we seperate opposite vehicle movement.
-        # Fifth setting: add out lane density (not implemented)
+    def get_state(self, setting_num=1):
+        global_state = []
 
-        if setting_num==0:
-            global_state = np.zeros((self.num_agents, 12), dtype=np.float32)
-            for i, (intersection_name, lanes) in enumerate(self.env.observations.items()): # lanes is a list containing 12 lane, from North, east, south to west, in clockwisemotion
-                global_state[i] = lanes
-        elif setting_num==1:
-            global_state = np.zeros((self.num_agents, 4), dtype=np.float32)
-            for i, (intersection_name, lanes) in enumerate(self.env.observations.items()):
-                for approach_idx in range(4):
-                    start = approach_idx * 3
-                    global_state[i, approach_idx] = np.mean(lanes[start:start + 3])
-        elif setting_num == 2:
-            global_state = np.zeros((self.num_agents, 4), dtype=np.float32)
-            for i, (intersection_name, lanes) in enumerate(self.env.observations.items()):
-                for approach_idx in range(4):
-                    if approach_idx == 0: # calculate mean for north south go straight and right turn approach
-                        global_state[i, approach_idx] = np.mean([lanes[0],lanes[1],lanes[6],lanes[7]])
-                    elif approach_idx == 1:   # calculate mean for north south left turn approach
-                        global_state[i, approach_idx] = np.mean([lanes[2],lanes[8]])
-                    elif approach_idx == 2:  # calculate mean for east west go straight and right turn approach
-                        global_state[i, approach_idx] = np.mean([lanes[3],lanes[4],lanes[9],lanes[10]])
-                    else:# calculate mean for east west left turn appraoch
-                        global_state[i, approach_idx] = np.mean([lanes[5], lanes[1]])
-        elif setting_num == 3:
-            global_state = np.zeros((self.num_agents, 8), dtype=np.float32)
-            for i, (intersection_name, lanes) in enumerate(self.env.observations.items()):
-                for approach_idx in range(8):
-                    if approach_idx == 0:  # calculate mean for north south go straight and right turn approach
-                        global_state[i, approach_idx] = np.mean([lanes[0], lanes[1]])
-                    elif approach_idx == 1:
-                        global_state[i, approach_idx] = np.mean([lanes[6], lanes[7]])
-                    elif approach_idx == 2:  # calculate mean for north south left turn approach
-                        global_state[i, approach_idx] = lanes[2]
-                    elif approach_idx == 3:  # calculate mean for north south left turn approach
-                        global_state[i, approach_idx] = lanes[8]
-                    elif approach_idx == 4:  # calculate mean for east west go straight and right turn approach
-                        global_state[i, approach_idx] = np.mean([lanes[3], lanes[4]])
-                    elif approach_idx == 5:  # calculate mean for east west go straight and right turn approach
-                        global_state[i, approach_idx] = np.mean([lanes[9], lanes[10]])
-                    elif approach_idx == 6:  # calculate mean for east west left turn appraoch
-                        global_state[i, approach_idx] = lanes[5]
-                    elif approach_idx == 7:  # calculate mean for east west left turn appraoch
-                        global_state[i, approach_idx] = lanes[1]
-                    # a = self.env.observations
-                    # state = np.concatenate(list(self.env.observations.values()))
-                    # return state
-        global_state = global_state.flatten()
-        return global_state
+        for ts_id in self.agents:
+            ts = self.env.traffic_signals[ts_id]
+            # Use ONLY normalized queue lengths as requested
+            queues = ts.get_lanes_queue()
 
+            if setting_num == 0:
+                # Setting 0: Every single approaching lane padded to max_lanes
+                padded_queues = np.pad(queues, (0, self.env.max_lanes - len(queues)), 'constant')
+                global_state.append(padded_queues)
+
+            elif setting_num == 1:
+                # Setting 1: Average lanes that belong to the same arm
+                edge_queues = {}
+                for lane, q in zip(ts.lanes, queues):
+                    edge_id = lane.rsplit("_", 1)[0]  # Extracts edge from "edge_0"
+                    if edge_id not in edge_queues:
+                        edge_queues[edge_id] = []
+                    edge_queues[edge_id].append(q)
+
+                arm_averages = [np.mean(qs) for qs in edge_queues.values()]
+
+                # Pad to max_arms
+                padded_arms = np.pad(arm_averages, (0, self.env.max_arms - len(arm_averages)), 'constant')
+                global_state.append(padded_arms)
+
+            elif setting_num == 2:
+                # Setting 2: Phase-based state mapping
+                phase_averages = []
+                for phase in ts.green_phases:
+                    active_lanes = set()
+
+                    # Check the string (e.g., 'GGrr') to find active links
+                    for i, state_char in enumerate(phase.state):
+                        if state_char.lower() == 'g':  # Green means active movement
+                            if i < len(ts.links) and len(ts.links[i]) > 0:
+                                incoming_lane = ts.links[i][0][0]
+                                active_lanes.add(incoming_lane)
+
+                    # Average the queues of lanes responsible for this phase
+                    if len(active_lanes) > 0:
+                        active_qs = [queues[ts.lanes.index(l)] for l in active_lanes if l in ts.lanes]
+                        phase_averages.append(np.mean(active_qs) if active_qs else 0.0)
+                    else:
+                        phase_averages.append(0.0)
+
+                # Pad to max_actions (phases)
+                padded_phases = np.pad(phase_averages, (0, self.env.max_actions - len(phase_averages)), 'constant')
+                global_state.append(padded_phases)
+
+        return np.concatenate(global_state).flatten()
+
+    # def get_state(self,setting_num=1): # Ong Customized for get_queue_length_normalized, setting_num can set for 0,1,2
+    #     # 3 settings,
+    #     # first setting: seperate every lanes, so every agent has 12 lane
+    #     # second setting: sum every approach, every agent has 4 approach
+    #     # thrid setting: divide appraoch using phase, also has 4 approaches same as second setting, but is phase focused, for example first phase take care of lane 2,3,8,9. first phase will sum the lanes density. So state for junction1 is 4
+    #     # fourth setting: more gruadunility compared to third setting, state for junction1 is 8, because we seperate opposite vehicle movement.
+    #     # Fifth setting: add out lane density (not implemented)
+    #
+    #     if setting_num==0:
+    #         global_state = np.zeros((self.num_agents, 12), dtype=np.float32)
+    #         for i, (intersection_name, lanes) in enumerate(self.env.observations.items()): # lanes is a list containing 12 lane, from North, east, south to west, in clockwisemotion
+    #             global_state[i] = lanes
+    #     elif setting_num==1:
+    #         global_state = np.zeros((self.num_agents, 4), dtype=np.float32)
+    #         for i, (intersection_name, lanes) in enumerate(self.env.observations.items()):
+    #             for approach_idx in range(4):
+    #                 start = approach_idx * 3
+    #                 global_state[i, approach_idx] = np.mean(lanes[start:start + 3])
+    #     elif setting_num == 2:
+    #         global_state = np.zeros((self.num_agents, 4), dtype=np.float32)
+    #         for i, (intersection_name, lanes) in enumerate(self.env.observations.items()):
+    #             for approach_idx in range(4):
+    #                 if approach_idx == 0: # calculate mean for north south go straight and right turn approach
+    #                     global_state[i, approach_idx] = np.mean([lanes[0],lanes[1],lanes[6],lanes[7]])
+    #                 elif approach_idx == 1:   # calculate mean for north south left turn approach
+    #                     global_state[i, approach_idx] = np.mean([lanes[2],lanes[8]])
+    #                 elif approach_idx == 2:  # calculate mean for east west go straight and right turn approach
+    #                     global_state[i, approach_idx] = np.mean([lanes[3],lanes[4],lanes[9],lanes[10]])
+    #                 else:# calculate mean for east west left turn appraoch
+    #                     global_state[i, approach_idx] = np.mean([lanes[5], lanes[1]])
+    #     elif setting_num == 3:
+    #         global_state = np.zeros((self.num_agents, 8), dtype=np.float32)
+    #         for i, (intersection_name, lanes) in enumerate(self.env.observations.items()):
+    #             for approach_idx in range(8):
+    #                 if approach_idx == 0:  # calculate mean for north south go straight and right turn approach
+    #                     global_state[i, approach_idx] = np.mean([lanes[0], lanes[1]])
+    #                 elif approach_idx == 1:
+    #                     global_state[i, approach_idx] = np.mean([lanes[6], lanes[7]])
+    #                 elif approach_idx == 2:  # calculate mean for north south left turn approach
+    #                     global_state[i, approach_idx] = lanes[2]
+    #                 elif approach_idx == 3:  # calculate mean for north south left turn approach
+    #                     global_state[i, approach_idx] = lanes[8]
+    #                 elif approach_idx == 4:  # calculate mean for east west go straight and right turn approach
+    #                     global_state[i, approach_idx] = np.mean([lanes[3], lanes[4]])
+    #                 elif approach_idx == 5:  # calculate mean for east west go straight and right turn approach
+    #                     global_state[i, approach_idx] = np.mean([lanes[9], lanes[10]])
+    #                 elif approach_idx == 6:  # calculate mean for east west left turn appraoch
+    #                     global_state[i, approach_idx] = lanes[5]
+    #                 elif approach_idx == 7:  # calculate mean for east west left turn appraoch
+    #                     global_state[i, approach_idx] = lanes[1]
+    #                 # a = self.env.observations
+    #                 # state = np.concatenate(list(self.env.observations.values()))
+    #                 # return state
+    #     global_state = global_state.flatten()
+    #     return global_state
+
+    def get_avail_agent_actions(self, agent):
+        """Returns the available actions for a specific agent as a list of 1s and 0s."""
+        return self.env.traffic_signals[agent].get_avail_actions()
+
+    def get_avail_actions(self):
+        """Returns the available actions for all agents as a list of lists. Required by PyMARL."""
+        return [self.get_avail_agent_actions(agent) for agent in self.agents]
 
     def get_observations(self): # Ong
-        obslist=list(self.env.observations.values())
-        max_len = max(len(a) for a in obslist)
+        # Ong's updated padding using the global max_obs_dim
+        obslist = list(self.env.observations.values())
+        max_len = self.env.max_obs_dim
+        # Pad with 0s up to the global max dimension
         padded_list = [np.pad(a, (0, max_len - len(a)), 'constant') for a in obslist]
         return np.array(padded_list)
+
+        # obslist=list(self.env.observations.values())
+        # max_len = max(len(a) for a in obslist)
+        # padded_list = [np.pad(a, (0, max_len - len(a)), 'constant') for a in obslist]
+        # return np.array(padded_list)
 
         # return np.array(list(self.env.observations.values()))
 
     def observe(self, agent):
         """Return the observation for the agent."""
         obs = self.env.observations[agent].copy()
-        return obs
+        max_len = self.env.max_obs_dim
+        padded_obs = np.pad(obs, (0, max_len - len(obs)), 'constant')
+        return padded_obs
 
     def close(self):
         """Close the environment and stop the SUMO simulation."""
@@ -666,20 +790,32 @@ class SumoEnvironmentPZ(AECEnv, EzPickle):
         self._cumulative_rewards[agent] = 0
         self._accumulate_rewards()
 
-    def get_env_info(self, global_state_setting_num=1):
+    def get_env_info(self, global_state_setting_num):
         n_agents = self.num_agents
-        n_actions = next(iter(self.action_spaces.values())).n
-
+        # n_actions = next(iter(self.action_spaces.values())).n
+        n_actions = self.env.max_actions
         n_actions_shape = (1,) # second params: get the action dim of first agent
         obs_dim = [agent_obs_dim.shape[0] for agent_obs_dim in self.observation_spaces.values()]
 
-        if global_state_setting_num == 1 or global_state_setting_num == 2:
-            state_shape = n_agents * 4  # times four intersections
-        elif global_state_setting_num == 0:
-            state_shape = n_agents * 12
-        elif global_state_setting_num == 3:
-            state_shape = n_agents * 8
-        obs_shape = next(iter(self.observation_spaces.values())).shape[0]
+        # Calculate exact flat state shape based on the padding applied in get_state
+        if global_state_setting_num == 0:
+            state_shape = n_agents * self.env.max_lanes
+        elif global_state_setting_num == 1:
+            state_shape = n_agents * self.env.max_arms
+        elif global_state_setting_num == 2:
+            state_shape = n_agents * self.env.max_actions
+        else:
+            raise ValueError("Invalid global_state_setting_num")
+
+        # if global_state_setting_num == 1 or global_state_setting_num == 2:
+        #     state_shape = n_agents * 4  # times four intersections
+        # elif global_state_setting_num == 0:
+        #     state_shape = n_agents * 12
+        # elif global_state_setting_num == 3:
+        #     state_shape = n_agents * 8
+
+
+        obs_shape = self.env.max_obs_dim
         episode_limit = self.env.sim_max_time // self.env.delta_time
 
 

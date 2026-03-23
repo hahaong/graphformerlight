@@ -52,9 +52,9 @@ class EpisodeRunner:
     def setupInformerBuffer(self):
         self.informerBuffer = InformerBuffer(self.num_agents, 720, self.obs_dim)
 
-    def get_env_info(self):
+    def get_env_info(self,global_state_setting_num):
 
-        return self.env.aec_env.get_env_info()
+        return self.env.aec_env.get_env_info(global_state_setting_num)
 
     def save_replay(self):
         pass
@@ -89,9 +89,13 @@ class EpisodeRunner:
         while not terminated:
             obs = self.env.aec_env.get_observations()
             state = self.env.aec_env.get_state(self.args.global_state_setting_num)
+            # Fetch available actions from your environment
+            avail_actions = self.env.aec_env.get_avail_actions()
+
             pre_transition_data = {
                     "state": state.reshape(1,-1),
-                    "obs": np.expand_dims(obs,axis=0)
+                    "obs": np.expand_dims(obs,axis=0),
+                    "avail_actions": np.expand_dims(avail_actions, axis=0)  # Shape: (1, n_agents, max_actions)
             }
 
             # pre_transition_data = {

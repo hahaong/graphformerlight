@@ -4,11 +4,11 @@
 action_selector: "epsilon_greedy"
 epsilon_start: 1.0
 epsilon_finish: 0.05
-epsilon_anneal_time: 108000
+epsilon_anneal_time: 54000
 
 runner: "episode"
 
-buffer_size: 300
+buffer_size: 150
 
 # update the target network every {} episodes
 target_update_interval: 50
