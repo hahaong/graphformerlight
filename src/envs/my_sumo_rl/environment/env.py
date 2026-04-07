@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 from typing import Callable, Optional, Tuple, Union
 
+os.environ["LIBSUMO_AS_TRACI"] = "1"
 
 if "SUMO_HOME" in os.environ:
     tools = os.path.join(os.environ["SUMO_HOME"], "tools")

@@ -671,7 +671,7 @@ def run_sequential(args):
                                                                  #500              #env seq length
     buffer = ReplayBuffer(scheme, groups, args.batch_size, args.buffer_size, env_info["episode_limit"], args.seq2seq, args.informer_seq_len, args.informer_pred_len, args.on_policy_learning,
                           preprocess=preprocess,
-                          device="cpu" if args.buffer_cpu_only else args.device)
+                          device="cpu" if args.buffer_cpu_only else args.device, learning_device = "cpu" if args.device == "cpu" else args.device)
 
     # Setup multiagent controller here
     mac = mac_REGISTRY[args.mac](buffer.scheme, groups, args, device=args.device)
@@ -787,9 +787,11 @@ def run_sequential(args):
             avg_attention_score_csv_data,single_sample_attention_score_csv_data, single_sample_encoded_hidden_states, single_sample_attn_query, single_sample_attn_key,single_sample_attn_logit= learner.train(episode_sample, runner.t_env, episode)
 
         # Execute test runs once in a while
-        if ((episode+1) % args.test_nepisode) == 0: # every test_nepisode epoch test, print results to csv file
-            runner.run(episode=episode+1,test_mode=True,informer_process_obs_ways=informer_process_obs_ways,seq2seq=args.seq2seq)
-            print("Reward for evaluation episode{}:{}".format(episode+1,episode_reward))
+        # if ((episode+1) % args.test_nepisode) == 0: # every test_nepisode epoch test, print results to csv file
+        #     runner.run(episode=episode+1,test_mode=True,informer_process_obs_ways=informer_process_obs_ways,seq2seq=args.seq2seq)
+        #     print("Reward for evaluation episode{}:{}".format(episode+1,episode_reward))
+
+
 
         # n_test_runs = max(1, args.test_nepisode // runner.batch_size)
         # if (runner.t_env - last_test_T) / args.test_interval >= 1.0:

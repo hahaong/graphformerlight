@@ -4,7 +4,7 @@ from types import SimpleNamespace as SN
 
 
 class ReplayBuffer():
-    def __init__(self, scheme, groups, batch_size,buffer_size, max_seq_length, seq2seq=False, informer_seq_len=20, informer_pred_len = 1, on_policy_learning=False, preprocess=None, device="cpu", single_episode_transition_data=False):
+    def __init__(self, scheme, groups, batch_size,buffer_size, max_seq_length, seq2seq=False, informer_seq_len=20, informer_pred_len = 1, on_policy_learning=False, preprocess=None, device="cpu", single_episode_transition_data=False, learning_device="cpu"):
         self.scheme = scheme
         self.groups = groups
         self.is_episode_data = scheme.get("is_episode_data",False) # episode data use normal MLP, transition data use GRU
@@ -18,6 +18,7 @@ class ReplayBuffer():
         self.on_policy_learning = on_policy_learning
         self.preprocess = preprocess
         self.device = device
+        self.learning_device = learning_device
 
         self.data = SN()
         self.data.transition_data = {}
@@ -222,10 +223,10 @@ class ReplayBuffer():
 
         new_data = self._new_data_sn()
         for k,v in self.data.transition_data.items():
-            new_data.transition_data[k] = v[ep_ids]
+            new_data.transition_data[k] = v[ep_ids].to(self.learning_device)
         new_data.max_seq_length = self.max_seq_length
         new_data.batch_size = current_batch_size
-        new_data.device = self.device
+        new_data.device = self.learning_device
 
         return new_data
 
