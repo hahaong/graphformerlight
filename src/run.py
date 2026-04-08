@@ -499,10 +499,7 @@ class Exp_Informer():
 
         for epoch in range(2):  # train informer epoch times
             train_loss = []
-            batch_x = []
-            batch_y = []
-            batch_x_mark = []
-            batch_y_mark = []
+            batch_x, batch_y, batch_x_mark, batch_y_mark = [], [], [], []
 
             for _ in range(episode_limit // seq_len):  # sample data times to form a batch, for loop iteration num = batch_size, now 720/20 is 36
                 s_begin = random.randint(0, max_start)
