@@ -184,23 +184,30 @@ class TrafficSignal:
         Args:
             new_phase (int): Number between [0 ... num_green_phases]
         """
-
-        # --- ADD SAFEGUARD FOR HETEROGENEOUS NETWORKS ---
-        # if new_phase >= self.num_green_phases:
-            # If the agent attempts to select an invalid padded phase, default to the last valid phase
-            # new_phase = self.num_green_phases - 1
-        # ------------------------------------------------
-
         new_phase = int(new_phase)
         if self.green_phase == new_phase or self.time_since_last_phase_change < self.yellow_time + self.min_green: # new phase is same as current or enter green phase after last yellow phase
             # self.sumo.trafficlight.setPhase(self.id, self.green_phase)
             self.sumo.trafficlight.setRedYellowGreenState(self.id, self.all_phases[self.green_phase].state)
             self.next_action_time = self.env.sim_step + self.delta_time
         else:
-            # self.sumo.trafficlight.setPhase(self.id, self.yellow_dict[(self.green_phase, new_phase)])  # turns yellow, and ready for the next green phase
-            self.sumo.trafficlight.setRedYellowGreenState(
-                self.id, self.all_phases[self.yellow_dict[(self.green_phase, new_phase)]].state
-            )
+            # FIX: Safely check if the yellow transition exists
+            transition_key = (self.green_phase, new_phase)
+
+            if transition_key in self.yellow_dict:
+                yellow_phase_idx = self.yellow_dict[transition_key]
+                self.sumo.trafficlight.setRedYellowGreenState(self.id, self.all_phases[yellow_phase_idx].state)
+            else:
+                # FALLBACK: If transition is missing, directly switch or calculate a dynamic yellow string
+                # This prevents KeyError on maps with irregular phase definitions
+                # Optionally print a warning the first time it happens
+                print(f"Warning: No yellow phase defined for {self.id} from {self.green_phase} to {new_phase}")
+                print(f"Warning: yellow dict is {self.yellow_dict}")
+                print(f"Warning: green_phase is {self.green_phase}")
+                print(f"Warning: all_phases is {self.all_phases}")
+
+                # Simple fallback: jump to next phase immediately (or build a string of 'y' and 'r')
+                self.sumo.trafficlight.setRedYellowGreenState(self.id, self.all_phases[new_phase].state)
+
             self.green_phase = new_phase
             self.next_action_time = self.env.sim_step + self.delta_time
             self.is_yellow = True

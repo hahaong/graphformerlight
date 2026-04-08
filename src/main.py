@@ -1,5 +1,9 @@
 import numpy as np
 import os
+os.environ["OMP_NUM_THREADS"] = "1"
+# Set these as well to be safe
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import collections
 from os.path import dirname, abspath
 from copy import deepcopy

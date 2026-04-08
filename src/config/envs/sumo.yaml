@@ -9,6 +9,7 @@ env_args:
   route_file:  maps/jinan12/anon_3_4_jinan_real_6269.rou.xml
   use_gui : False
   num_seconds: 3600 # one hour
+  begin_time: 25200
   yellow_time: 2
   delta_time: 5
   min_green: 5

@@ -724,7 +724,9 @@ class SumoEnvironmentPZ(AECEnv, EzPickle):
 
     def get_avail_actions(self):
         """Returns the available actions for all agents as a list of lists. Required by PyMARL."""
-        return [self.get_avail_agent_actions(agent) for agent in self.agents]
+        avail_action_list= [self.get_avail_agent_actions(agent) for agent in self.agents]
+        return avail_action_list
+
 
     def get_observations(self): # Ong
         # Ong's updated padding using the global max_obs_dim
