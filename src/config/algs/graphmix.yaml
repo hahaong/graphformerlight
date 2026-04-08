@@ -24,6 +24,7 @@ hypernet_embed: 64
 adj_mask_file: maps/jinan12/anon_3_4_jinan_real.csv
 full_attn: False
 temperature_k: 0.8
+seq2seq_paramsharing: False
 
 # local loss coefficient
 lambda_local: 1

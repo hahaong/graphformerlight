@@ -438,7 +438,7 @@ class Exp_Informer():
         self.args.output_attention=False
         self.args.distil=False
         self.args.mix=True
-        self.device
+        self.args.seq2seq_paramsharing = self.args.seq2seq_paramsharing
 
         self.model = self._build_model().to(self.device)
 
@@ -496,16 +496,29 @@ class Exp_Informer():
 
         episode_limit = self.args.episode_limit
         max_start = episode_limit - seq_len - pred_len
+        n_agents = self.args.n_agents
+
+
 
         for epoch in range(2):  # train informer epoch times
             train_loss = []
             batch_x, batch_y, batch_x_mark, batch_y_mark = [], [], [], []
 
-            for _ in range(episode_limit // seq_len):  # sample data times to form a batch, for loop iteration num = batch_size, now 720/20 is 36
+            # Sample enough times to cover the data volume of all agents
+            if self.args.seq2seq_paramsharing == True:
+                num_samples = (episode_limit // seq_len)
+            else:
+                num_samples = (episode_limit // seq_len)
+            for _ in range(num_samples):
                 s_begin = random.randint(0, max_start)
                 s_end = s_begin + seq_len
                 r_begin = s_end - label_len
                 r_end = r_begin + label_len + pred_len
+
+                # Randomly pick an agent to sample data from
+                if self.args.seq2seq_paramsharing == True:
+                    agent_index = random.randint(0, n_agents - 1)
+
 
                 seq_x = episode_batch_obs_data[0, s_begin:s_end, agent_index, :]
                 seq_y = episode_batch_obs_data[0, r_begin:r_end, agent_index, :]
@@ -517,17 +530,28 @@ class Exp_Informer():
                 batch_x_mark.append(seq_x_mark)
                 batch_y_mark.append(seq_y_mark)
 
-            batch_x = th.stack(batch_x)  # [batch_size, enc_len, state_dim]
-            batch_y = th.stack(batch_y)  # [batch_size, dec_len, state_dim]
+            batch_x = th.stack(batch_x)  # [batch_size, enc_len, obs_shape]
+            batch_y = th.stack(batch_y)
             batch_x_mark = th.stack(batch_x_mark)
             batch_y_mark = th.stack(batch_y_mark)
 
+            # Process in mini-chunks to prevent GPU Out-of-Memory errors
+            chunk_size = 64
+            epoch_loss = []
+            # for i in range(0, len(batch_x), chunk_size):
+            #     bx = batch_x[i:i + chunk_size]
+            #     by = batch_y[i:i + chunk_size]
+            #     bxm = batch_x_mark[i:i + chunk_size]
+            #     bym = batch_y_mark[i:i + chunk_size]
+
             model_optim.zero_grad()
             pred, true = self._process_one_batch(batch_x, batch_y, batch_x_mark, batch_y_mark)
+
             loss = criterion(pred, true)
-            train_loss.append(loss.item())
+            epoch_loss.append(loss.item())
             loss.backward()
             model_optim.step()
+            train_loss.append(np.average(epoch_loss))
 
         train_loss = np.average(train_loss)
         # print("Informer Innner Epoch: {} | Training Loss {}".format(epoch, train_loss))
@@ -682,8 +706,15 @@ def run_sequential(args):
     if args.use_cuda:
         learner.cuda()
 
-    # Initialized Informer model for agents
-    if args.seq2seq == True:
+
+
+
+    if args.seq2seq == True and args.seq2seq_paramsharing == True:
+        # 1. Initialize ONE shared model
+        shared_informer_model = Exp_Informer(args)
+        # 2. Populate the list with references to the EXACT SAME model
+        Informer_agent_models = [shared_informer_model for _ in range(args.n_agents)]
+    elif args.seq2seq == True and args.seq2seq_paramsharing == False:
         Informer_agent_models = []
         for agent_num in range(args.n_agents):
             Informer_agent_models.append(Exp_Informer(args))
@@ -758,10 +789,16 @@ def run_sequential(args):
             time_informer_start = time.time()
             train_losses = []
             train_losses_all_agent_single_value = 0
-            for agent_num in range (args.n_agents):
-                # call agent's informer
-                _,train_loss = Informer_agent_models[agent_num].train(episode_batch_informer_obs_data,agent_num)
+
+            if args.seq2seq_paramsharing == True:
+                # Train the shared model ONCE using data from all agents
+                _, train_loss = shared_informer_model.train(episode_batch_informer_obs_data,0)
                 train_losses.append(train_loss)
+            else:
+                for agent_num in range (args.n_agents):
+                    # call agent's informer
+                    _,train_loss = Informer_agent_models[agent_num].train(episode_batch_informer_obs_data,agent_num)
+                    train_losses.append(train_loss)
             train_losses_all_agent_single_value = np.average(train_losses)
             episodes_seq2seq_loss_list.append(train_losses_all_agent_single_value)
             time_informer_end = time.time()

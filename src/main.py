@@ -66,6 +66,7 @@ if __name__ == '__main__':
                         help='label_len for informer, showing decoder use how many data to predict')
     parser.add_argument('--informer_pred_len', type=int, default=1,
                         help='predict pred_len amount of time-series data')
+    parser.add_argument('--seq2seq_paramsharing', action="store_true",help='include this if you want informer to works in param sharing mode')
     parser.add_argument('--global_state_setting_num', type=int, default=2,
                         help='can set 0,1,2. 0 means all lanes is concatenate, 1 only consider approach based for example junction1 has 4 approaches, 2 consider traffic light approach')
     parser.add_argument('--on_policy_learning', action="store_true",
@@ -91,6 +92,7 @@ if __name__ == '__main__':
     informer_seq_len = args.informer_seq_len
     informer_label_len = args.informer_label_len
     informer_pred_len = args.informer_pred_len
+    seq2seq_paramsharing = args.seq2seq_paramsharing
     global_state_setting_num = args.global_state_setting_num
     on_policy_learning = args.on_policy_learning
     full_attn = args.full_attn
@@ -133,6 +135,7 @@ if __name__ == '__main__':
     alg_config["mixing_embed_dim"] = mixing_embed_dim
     alg_config['full_attn'] = full_attn
     alg_config['temperature_k'] = temperature_k
+    alg_config['seq2seq_paramsharing'] = seq2seq_paramsharing
     alg_config['lambda_local'] = lambda_local
     alg_config['double_q'] = double_q
     # config_dict = {**config_dict, **env_config, **alg_config}
