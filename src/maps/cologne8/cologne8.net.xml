@@ -31,7 +31,8 @@
 
 <net version="1.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://sumo.dlr.de/xsd/net_file.xsd">
 
-    <location netOffset="-342498.65,-5630866.92" convBoundary="13565.01,16795.57,14657.34,18337.23" origBoundary="6.166558,50.735925,7.295276,51.840721" projParameter="+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"/>
+<!--    <location netOffset="-342498.65,-5630866.92" convBoundary="13565.01,16795.57,14657.34,18337.23" origBoundary="6.166558,50.735925,7.295276,51.840721" projParameter="+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"/>-->
+    <location netOffset="-342498.65,-5630866.92" convBoundary="13565.01,16795.57,14657.34,18337.23" origBoundary="6.166558,50.735925,7.295276,51.840721" projParameter="!"/>
 
     <type id="highway.bridleway" priority="1" numLanes="1" speed="2.78" allow="pedestrian" oneway="1" width="2.00"/>
     <type id="highway.bus_guideway" priority="1" numLanes="1" speed="13.89" allow="bus" oneway="1"/>

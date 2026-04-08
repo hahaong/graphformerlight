@@ -818,7 +818,7 @@ def run_sequential(args):
             #     episode_sample.to(args.device)
 
 
-            avg_attention_score_csv_data,single_sample_attention_score_csv_data, single_sample_encoded_hidden_states, single_sample_attn_query, single_sample_attn_key,single_sample_attn_logit= learner.train(episode_sample, runner.t_env, episode)
+            avg_attention_score_csv_data = learner.train(episode_sample, runner.t_env, episode)
 
         # Execute test runs once in a while
         # if ((episode+1) % args.test_nepisode) == 0: # every test_nepisode epoch test, print results to csv file

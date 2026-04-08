@@ -18,7 +18,7 @@ agent_output_type: "q"
 learner: "q_learner"
 double_q: False
 mixer: "qmix"
-mixing_embed_dim: 64
+qmix_mixing_embed_dim: 64
 hypernet_layers: 2
 hypernet_embed: 64
 

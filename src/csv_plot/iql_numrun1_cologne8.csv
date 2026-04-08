@@ -1,0 +1,7 @@
+Epochs,0,1
+Reward,-4609.7500000000055,-1287.0099999999993
+seq2seqLoss
+system_accumulated_waiting_times,782304.0,145248.0
+system_total_stopped,611,113
+system_mean_waiting_time,355.5128617363344,314.7987804878049
+system_mean_speed,0.09076244786677615,2.161145379430139

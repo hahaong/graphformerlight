@@ -96,7 +96,6 @@ class QLearner:
 
         #Declare First
         avg_attention_score=None
-        single_sample_attention_score=None
         if self.args.mixer == 'graphmix':
             # Mix
             chosen_action_qvals_peragent = chosen_action_qvals.clone() # (b,seq-1,num_agent)
@@ -207,7 +206,7 @@ class QLearner:
         #     self.log_stats_t = t_env
 
         # return attention score if using graphmix
-        return avg_attention_score, single_sample_attention_score, single_sample_encoded_hidden_states, single_sample_attn_query, single_sample_attn_key,single_sample_attn_logit
+        return avg_attention_score
             
     def _update_targets(self):
         self.target_mac.load_state(self.mac)

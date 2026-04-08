@@ -819,7 +819,7 @@ class SumoEnvironmentPZ(AECEnv, EzPickle):
 
 
         obs_shape = self.env.max_obs_dim
-        episode_limit = self.env.sim_max_time // self.env.delta_time
+        episode_limit = (self.env.sim_max_time - self.env.begin_time) // self.env.delta_time
 
 
         return{
