@@ -4,7 +4,7 @@
 action_selector: "epsilon_greedy"
 epsilon_start: 1.0
 epsilon_finish: 0.05
-epsilon_anneal_time: 54000
+epsilon_anneal_time: 75600
 
 runner: "episode"
 
@@ -14,6 +14,7 @@ buffer_size: 150
 target_update_interval: 50
 
 # use the Q_Learner to train
+agent: "mlp"
 agent_output_type: "q"
 learner: "qtran_learner"
 double_q: False

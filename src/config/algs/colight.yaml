@@ -1,30 +1,27 @@
-# --- VDN specific parameters ---
+# --- QMIX specific parameters ---
 
 # use epsilon greedy action selector
 action_selector: "epsilon_greedy"
 epsilon_start: 1.0
 epsilon_finish: 0.05
-#epsilon_anneal_time_ratio: 0.5 # fully decay at total timesteps * ratio
-epsilon_anneal_time: 75600 #  0.5 * total timestep
+epsilon_anneal_time: 75600
 
 runner: "episode"
 
 buffer_size: 150
 
 # update the target network every {} episodes
-#tau: 0.005
 target_update_interval: 50
 
 # use the Q_Learner to train
-agent: "mlp"
+agent: "colight"
 agent_output_type: "q"
 learner: "q_learner"
 double_q: False
-mixer: "vdn"
+mixer: # Mixer becomes None
 
-name: "vdn"
-
-
+name: "colight"
 
 
-
+env_args:
+  reward_fn: "diff-waiting-time"
