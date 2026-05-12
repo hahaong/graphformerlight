@@ -81,6 +81,7 @@ class EpisodeRunner:
         self.mac.init_hidden(batch_size=self.batch_size) # sample batch_size
 
         resultDic={}
+        systemAccumulatedWaitingTimeList=[]
         systemTotalWaitingTimeList = []
         systemTotalStoppedList = []
         systemMeanWaitingTimeList = []
@@ -216,11 +217,16 @@ class EpisodeRunner:
 
             if not test_mode:
                 self.t_env += self.t
-                if isDone: # record last step's info to a csv file, will append to reward csv file
-                    resultDic["system_accumulated_waiting_times"] = next(iter(info.values()))["system_accumulated_waiting_times"]
-                    resultDic["system_total_stopped"] = next(iter(info.values()))["system_total_stopped"]
-                    resultDic["system_mean_waiting_time"] = next(iter(info.values()))["system_mean_waiting_time"]
-                    resultDic["system_mean_speed"] = next(iter(info.values()))["system_mean_speed"]
+                systemAccumulatedWaitingTimeList.append(next(iter(info.values()))["system_accumulated_waiting_times"])
+                systemTotalStoppedList.append(next(iter(info.values()))["system_total_stopped"])
+                systemMeanWaitingTimeList.append(next(iter(info.values()))["system_mean_waiting_time"])
+                systemMeanSpeedList.append(next(iter(info.values()))["system_mean_speed"])
+
+                # if isDone: # record last step's info to a csv file, will append to reward csv file
+                #     resultDic["system_accumulated_waiting_times"] = next(iter(info.values()))["system_accumulated_waiting_times"]
+                #     resultDic["system_total_stopped"] = next(iter(info.values()))["system_total_stopped"]
+                #     resultDic["system_mean_waiting_time"] = next(iter(info.values()))["system_mean_waiting_time"]
+                #     resultDic["system_mean_speed"] = next(iter(info.values()))["system_mean_speed"]
 
             if test_mode:
                 systemTotalWaitingTimeList.append(next(iter(info.values()))["system_accumulated_waiting_times"])
@@ -250,6 +256,10 @@ class EpisodeRunner:
                     write.writerow(["system_mean_waiting_time"]+self.systemMeanWaitingTime2DList[i])
                     write.writerow(["system_mean_speed"] + self.systemMeanSpeed2DList[i])
 
+        resultDic["system_accumulated_waiting_times"] = systemAccumulatedWaitingTimeList[-1]
+        resultDic["system_total_stopped"] = np.mean(systemTotalStoppedList)
+        resultDic["system_mean_waiting_time"] = np.mean(systemMeanWaitingTimeList)
+        resultDic["system_mean_speed"] = np.mean(systemMeanSpeedList)
 
         return seq_buffer.seq_data, episode_return, resultDic
 

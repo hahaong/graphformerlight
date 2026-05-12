@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2026-04-28 07:31:15 by Eclipse SUMO duarouter Version 1.18.0
+<!-- generated on 2026-04-28 07:29:00 by Eclipse SUMO duarouter Version 1.18.0
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
 
     <input>
-        <net-file value="D:\workspace\workspace2\graphformerlight_server_revised\src\maps\cologne8/cologne8.net.xml"/>
-        <route-files value="D:\workspace\workspace2\graphformerlight_server_revised\src\maps\cologne8\cologne8.trip.xml"/>
+        <net-file value="cologne8.net.xml"/>
+        <route-files value="cologne8.trip.xml"/>
     </input>
 
     <output>
-        <output-file value="D:\workspace\workspace2\graphformerlight_server_revised\src\maps\cologne8\cologne8.rou.xml"/>
+        <output-file value="cologne8.rou.xml"/>
     </output>
 
 </configuration>

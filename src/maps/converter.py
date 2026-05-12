@@ -87,7 +87,7 @@ else:
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--typ", type=str,
-                        default='c2s', choices=['c2s','s2c'], help='CityFlow2SUMO or SUMO2CityFlow')
+                        default='s2c', choices=['c2s','s2c'], help='CityFlow2SUMO or SUMO2CityFlow')
     # sumo2cityflow
     # parser.add_argument("--or_sumonet", type=str,
     #                     default='grid4x4/grid4x4.net.xml')
@@ -112,15 +112,15 @@ def parse_args():
     #                     default='cologne1/cologne1.sumocfg')
 
     parser.add_argument("--or_sumonet", type=str,
-                        default='newyork48/anon_16_3_newyork_real.net.xml')
+                        default='cologne8/cologne8.net.xml')
     parser.add_argument("--cityflownet", type=str,
-                        default='newyork48/roadnet_16_3.json')
+                        default='cologne8/roadnet_8.json')
     parser.add_argument("--or_sumotraffic", type=str,
-                        default='newyork48/anon_16_3_newyork_real.rou.xml')
+                        default='cologne8/cologne8.rou.xml')
     parser.add_argument("--cityflowtraffic", type=str,
-                        default='newyork48/anon_16_3_newyork_real.json')
+                        default='cologne8/cologne8.json')
     parser.add_argument("--sumocfg", type=str,
-                        default='newyork48/anon_16_3_newyork_real.sumocfg')
+                        default='cologne8/cologne8.sumocfg')
 
     # cityflow2sumo
     # parser.add_argument("--or_cityflownet", type=str,
@@ -655,7 +655,8 @@ def sumo2cityflow_flow(args):
     :return: None
     '''
     # parent dir of current dir
-    f_cwd = os.path.abspath(os.path.dirname(os.getcwd()) + os.path.sep + ".")
+    # f_cwd = os.path.abspath(os.path.dirname(os.getcwd()) + os.path.sep + ".")
+    f_cwd = os.path.abspath(os.getcwd())
     sumofile = os.path.join(f_cwd, args.or_sumotraffic)
     cityflowfile = os.path.join(f_cwd, args.cityflowtraffic)
 
@@ -677,7 +678,7 @@ def sumo2cityflow_flow(args):
             print('rename file success\r\n')
         # 2. create true rou.xml
         sumofile = get_filename(sumofile, typ='rou')
-        sumonet = os.path.join(f_cwd, 'data/raw_data', args.or_sumonet)
+        sumonet = os.path.join(f_cwd, args.or_sumonet)
         os.system(
             f"duarouter --route-files={dst} --net-file={sumonet} --output-file={sumofile}")
         print("SUMO rou file generated successfully!")
@@ -738,8 +739,9 @@ def sumo2cityflow_net(args):
     '''
     # parent dir of current dir
     f_cwd = os.path.abspath(os.path.dirname(os.getcwd()) + os.path.sep + ".")
-    sumofile = os.path.join(f_cwd, 'data/raw_data', args.or_sumonet)
-    cityflowfile = os.path.join(f_cwd, 'data/raw_data', args.cityflownet)
+    f_cwd = os.path.abspath(os.getcwd())
+    sumofile = os.path.join(f_cwd, args.or_sumonet)
+    cityflowfile = os.path.join(f_cwd, args.cityflownet)
     print("Converting sumo net file", args.or_sumonet)
     net = sumolib.net.readNet(sumofile, withPrograms=True)
 
