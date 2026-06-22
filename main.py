@@ -133,6 +133,7 @@ if __name__ == '__main__':
     env_config = _get_config(env_config, "envs")
     env_config['env_args']['net_file'] = net_file
     env_config['env_args']['route_file'] = route_file
+    env_config['env_args']['out_csv_name'] = csv_name
 
     alg_config = _get_config( config, "algs")
     alg_config['adj_mask_file']=adj_mask_file

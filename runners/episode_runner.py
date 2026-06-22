@@ -1,6 +1,7 @@
 from envs import REGISTRY as env_REGISTRY
 from functools import partial
 from components.episode_buffer import ReplayBuffer
+from components.mfd_calibrator import DynamicMFDCalibrator
 import numpy as np
 import torch as th
 import csv
@@ -71,6 +72,9 @@ class EpisodeRunner:
     def run(self, Informer_agent_models=None, episode=0, test_mode=False,informer_process_obs_ways=None,seq2seq=False):
         if test_mode:
             print("Evaluation for episode:{} starting".format(episode))
+
+        mfd_calibrator = DynamicMFDCalibrator(sample_interval_secs=60, initial_n_c=250.0)
+        current_nc_threshold = mfd_calibrator.current_n_c
 
         self.reset()
 

@@ -38,6 +38,93 @@ def env(**kwargs):
 
 parallel_env = parallel_wrapper_fn(env)
 
+class DynamicMFDCalibrator:
+    """
+    MODULE 1: ITERATIVE MFD CALIBRATOR
+    Tracks macro-level network accumulation and trip completion rate data pairs
+    during an active episode to dynamically reconstruct the network's MFD
+    and update the critical accumulation threshold (n_c) for the next episode.
+    """
+
+    def __init__(self, sample_interval_secs: int = 60, initial_n_c: float = 250.0):
+        self.sample_interval = sample_interval_secs
+        self.current_n_c = initial_n_c
+
+        # Episodic data tracking arrays
+        self.episode_accumulation_records = []
+        self.episode_tc_records = []
+
+        print(f"[MFD Calibrator] Initialized with static baseline n_c = {self.current_n_c}")
+
+    def collect_step_data(self, current_seconds: int, accumulation: float, trip_completion_rate: float):
+        """
+        To be called inside the simulation step. Collects macroscopic data points
+        at the specified sampling interval (e.g., every 60 seconds).
+        """
+        if current_seconds % self.sample_interval == 0:
+            self.episode_accumulation_records.append(accumulation)
+            self.episode_tc_records.append(trip_completion_rate)
+
+    def execute_episodic_calibration(self, episode_idx: int) -> float:
+        """
+        To be called at the exact termination of an episode. Fits the cubic MFD function
+        via OLS and analytically solves dG/dn = 0 to update the critical accumulation.
+
+        Returns:
+            float: The newly calibrated critical accumulation (n_c) for the next episode.
+        """
+        n = np.array(self.episode_accumulation_records, dtype=np.float64)
+        G = np.array(self.episode_tc_records, dtype=np.float64)
+
+        # Flush metrics immediately to prepare for the subsequent episode
+        self.episode_accumulation_records.clear()
+        self.episode_tc_records.clear()
+
+        # Guard rail: Ensure enough distinct data samples exist to perform regression safely
+        if len(n) < 5 or np.all(n == 0):
+            print(
+                f"[MFD Calibrator] Episode {episode_idx}: Insufficient data points. Maintaining n_c = {self.current_n_c:.2f}")
+            return self.current_n_c
+
+        # Construct the OLS Design Matrix for: G(n) = a*n^3 + b*n^2 + c*n
+        # No intercept row is added because when n=0, trip completion flow must equal 0.
+        X = np.vstack([n ** 3, n ** 2, n]).T
+
+        try:
+            # Solve normal equations via OLS: theta = (X^T * X)^(-1) * X^T * G
+            X_T_X_inv = np.linalg.inv(X.T @ X)
+            theta = X_T_X_inv @ X.T @ G
+            a, b, c = theta[0], theta[1], theta[2]
+
+            # Analytical Peak Finding:
+            # dG/dn = 3*a*n^2 + 2*b*n + c = 0
+            # Standard quadratic roots formulation: n = (-2b +/- sqrt(4b^2 - 12ac)) / (6a)
+            discriminant = (2.0 * b) ** 2 - 12.0 * a * c
+
+            if discriminant >= 0 and a < 0:  # a must be negative for a downward-opening parabolic peak
+                calculated_n_c = (-2.0 * b - np.sqrt(discriminant)) / (6.0 * a)
+
+                # Physical validation bounds check
+                if 10.0 < calculated_n_c < np.max(n) * 1.5:
+                    self.current_n_c = float(calculated_n_c)
+                    print(
+                        f"[MFD Calibrator] Episode {episode_idx} SUCCESS! Fitted Coefficients: a={a:.2e}, b={b:.2e}, c={c:.2e}")
+                    print(
+                        f"[MFD Calibrator] Calibrated critical accumulation for next episode: n_c = {self.current_n_c:.2f}")
+                else:
+                    print(
+                        f"[MFD Calibrator] Episode {episode_idx} WARNING: Calculated peak {calculated_n_c:.2f} out of real bounds. Retaining previous n_c.")
+            else:
+                print(
+                    f"[MFD Calibrator] Episode {episode_idx} WARNING: Invalid MFD shape (discriminant < 0 or positive a). Retaining previous n_c.")
+
+        except (np.linalg.LinAlgError, ValueError) as e:
+            print(
+                f"[MFD Calibrator] Episode {episode_idx} ERROR: Matrix inversion or numerical variance error during OLS regression: {e}")
+            # Maintain previous operational state on matrix errors
+            pass
+
+        return self.current_n_c
 
 class SumoEnvironment(gym.Env):
     """SUMO Environment for Traffic Signal Control.
@@ -142,7 +229,7 @@ class SumoEnvironment(gym.Env):
         self.label = str(SumoEnvironment.CONNECTION_LABEL)
         SumoEnvironment.CONNECTION_LABEL += 1
         self.sumo = None
-
+        self.mfd = DynamicMFDCalibrator(sample_interval_secs=60, initial_n_c=1000)
         if LIBSUMO:
             traci.start([sumolib.checkBinary("sumo"), "-n", self._net])  # Start only to retrieve traffic light information
             conn = traci
@@ -220,6 +307,10 @@ class SumoEnvironment(gym.Env):
         self.out_csv_name = out_csv_name
         self.observations = {ts: None for ts in self.ts_ids}
         self.rewards = {ts: None for ts in self.ts_ids}
+        # ======= NEW CODE FOR MFD MONITORING =======
+        self.mfd_data = []
+        self.mfd_arrived_accumulator = 0
+        # ===========================================
 
     def _start_simulation(self):
         sumo_cmd = [
@@ -273,8 +364,13 @@ class SumoEnvironment(gym.Env):
         if self.episode != 0:
             self.close()
             self.save_csv(self.out_csv_name, self.episode)
+
+            if self.episode % 10 == 0:
+                self.save_mfd_csv(self.out_csv_name, self.episode)
         self.episode += 1
         self.metrics = []
+        self.mfd_data = []
+        self.mfd_arrived_accumulator = 0
 
         if seed is not None:
             self.sumo_seed = seed
@@ -454,6 +550,32 @@ class SumoEnvironment(gym.Env):
     def _sumo_step(self):
         self.sumo.simulationStep()
 
+        # 1. Accumulate vehicles that finished their trip in this step
+        self.mfd_arrived_accumulator += self.sumo.simulation.getArrivedNumber()
+
+        # 2. Check time elapsed in seconds
+        current_sim_time = self.sim_step
+        elapsed_time = int(round(current_sim_time - self.begin_time))
+
+        self.mfd.collect_step_data(current_seconds=elapsed_time, accumulation=len(self.sumo.vehicle.getIDList()),trip_completion_rate=self.mfd_arrived_accumulator)
+
+        # 3. Every 60 seconds, record the metrics
+        if elapsed_time > 0 and elapsed_time % 60 == 0:
+            # Prevent potential duplicate logging at the same timestep boundary
+            if not self.mfd_data or self.mfd_data[-1]['time'] != current_sim_time:
+                accumulation = len(self.sumo.vehicle.getIDList())
+                trip_completion_rate = self.mfd_arrived_accumulator
+
+                self.mfd_data.append({
+                    "episode": self.episode,
+                    "time": current_sim_time,
+                    "accumulation": accumulation,
+                    "trip_completion_rate": trip_completion_rate
+                })
+
+                # Reset arrival accumulator for the next 60-second window
+                self.mfd_arrived_accumulator = 0
+
     def _get_system_info(self):
         # timeLoss = self.sumo.simulation.getParameter("","device.tripinfo.timeLoss")
         vehicles = self.sumo.vehicle.getIDList()
@@ -526,12 +648,32 @@ class SumoEnvironment(gym.Env):
             episode (int): Episode number to be appended to the output file name.
         """
         if out_csv_name is not None:
-            df = pd.DataFrame(self.metrics)
-            Path(Path(out_csv_name).parent).mkdir(parents=True, exist_ok=True)
-            df.to_csv(out_csv_name + f"_conn{self.label}_ep{episode}" + ".csv", index=False)
+            pass
+            # df = pd.DataFrame(self.metrics)
+            # Path(Path(out_csv_name).parent).mkdir(parents=True, exist_ok=True)
+            # df.to_csv(out_csv_name + f"_conn{self.label}_ep{episode}" + ".csv", index=False)
+
+    def save_mfd_csv(self, out_csv_name, episode):
+        """Appends the current episode's MFD tracking metrics to a single master csv file."""
+        if out_csv_name is not None and len(self.mfd_data) > 0:
+            df_mfd = pd.DataFrame(self.mfd_data)
+
+            # Define a single fixed file path without the episode suffix
+            mfd_file_path = out_csv_name + "_mfd.csv"
+            path = Path(mfd_file_path)
+
+            # Ensure the directory exists
+            path.parent.mkdir(parents=True, exist_ok=True)
+
+            # If the file doesn't exist yet, write the header row.
+            # If it already exists, don't write the header row again.
+            write_header = not path.exists()
+
+            # Append data to the file
+            df_mfd.to_csv(mfd_file_path, mode='a', index=False, header=write_header)
+            print(f"--> [MFD Logging] Appended episode {episode} data to master file: {mfd_file_path}")
 
     # Below functions are for discrete state space
-
     def encode(self, state, ts_id):
         """Encode the state of the traffic signal into a hashable object."""
         phase = int(np.where(state[: self.traffic_signals[ts_id].num_green_phases] == 1)[0])

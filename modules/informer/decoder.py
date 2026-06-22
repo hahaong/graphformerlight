@@ -30,10 +30,12 @@ class DecoderLayer(nn.Module):
         )[0])
 
         y = x = self.norm2(x)
-        y = self.dropout(self.activation(self.conv1(y.transpose(-1,1))))
-        y = self.dropout(self.conv2(y).transpose(-1,1))
+        # y = self.dropout(self.activation(self.conv1(y.transpose(-1,1))))
+        # y = self.dropout(self.conv2(y).transpose(-1,1))
+        #
+        # return self.norm3(x+y)
+        return  x
 
-        return self.norm3(x+y)
 
 class Decoder(nn.Module):
     def __init__(self, layers, norm_layer=None):
