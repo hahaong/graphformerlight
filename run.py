@@ -322,8 +322,6 @@ def run_sequential(args):
         learner.cuda()
 
 
-
-
     if args.seq2seq == True and args.seq2seq_paramsharing == True:
         # 1. Initialize ONE shared model
         shared_informer_model = Exp_Informer(args)
@@ -360,7 +358,6 @@ def run_sequential(args):
 
         model_path = os.path.join(args.checkpoint_path, str(timestep_to_load))
 
-        # logger.console_logger.info("Loading model from {}".format(model_path))
         learner.load_models(model_path)
         runner.t_env = timestep_to_load
 
@@ -370,11 +367,6 @@ def run_sequential(args):
 
     # start training
     episode = 0
-    # last_test_T = -args.test_interval - 1 # -10000-1
-    # last_log_T = 0
-    # model_save_time = 0
-
-    # logger.console_logger.info("Beginning training for {} timesteps".format(args.t_max)) # 2050000
 
     episode_list = []
     avg_attention_score_2Dlist = []
@@ -425,47 +417,15 @@ def run_sequential(args):
 
         buffer.insert_episode_batch(episode_batch.transition_data)
 
-        # if buffer.can_sample(args.batch_size): #32
+        # if buffer.can_sample(args.batch_size):
         for i in range(args.num_epochs): # inner training loop # 1 as value
             episode_sample = buffer.sample(args.batch_size)
 
             # if episode_sample.device != args.device:
             #     episode_sample.to(args.device)
 
-
             avg_attention_score_csv_data = learner.train(episode_sample, runner.t_env, episode)
 
-        # Execute test runs once in a while
-        # if ((episode+1) % args.test_nepisode) == 0: # every test_nepisode epoch test, print results to csv file
-        #     runner.run(episode=episode+1,test_mode=True,informer_process_obs_ways=informer_process_obs_ways,seq2seq=args.seq2seq)
-        #     print("Reward for evaluation episode{}:{}".format(episode+1,episode_reward))
-
-
-
-        # n_test_runs = max(1, args.test_nepisode // runner.batch_size)
-        # if (runner.t_env - last_test_T) / args.test_interval >= 1.0:
-        #
-        #     # logger.console_logger.info("t_env: {} / {}".format(runner.t_env, args.t_max))
-        #     # logger.console_logger.info("Estimated time left: {}. Time passed: {}".format(
-        #     #     time_left(last_time, last_test_T, runner.t_env, args.t_max), time_str(time.time() - start_time)))
-        #     # last_time = time.time()
-        #
-        #     last_test_T = runner.t_env
-        #     for _ in range(n_test_runs):
-        #         runner.run(test_mode=True)
-
-        # if args.save_model and (runner.t_env - model_save_time >= args.save_model_interval or model_save_time == 0):
-        #     model_save_time = runner.t_env
-        #     save_path = os.path.join(args.local_results_path, "models", args.unique_token, str(runner.t_env))
-        #     #"results/models/{}".format(unique_token)
-        #     os.makedirs(save_path, exist_ok=True)
-        #     # logger.console_logger.info("Saving models to {}".format(save_path))
-        #
-        #     # learner should handle saving/loading -- delegate actor save/load to mac,
-        #     # use appropriate filenames to do critics, optimizer states
-        #     learner.save_models(save_path)
-
-        # episode += args.batch_size_run
         episode += 1
         episodes_reward_list.append(episode_reward)
         for key,value in resultDic.items():
@@ -473,10 +433,6 @@ def run_sequential(args):
                 episodes_info_result_dic[key] = []
             episodes_info_result_dic[key].append(value)
 
-        # if (runner.t_env - last_log_T) >= args.log_interval:
-        #     # logger.log_stat("episode", episode, runner.t_env)
-        #     # logger.print_recent_stats()
-        #     last_log_T = runner.t_env
 
         end_time = time.time()
         execution_time = end_time - time_start
@@ -496,13 +452,6 @@ def run_sequential(args):
         Path(Path(args.csv_name).parent).mkdir(parents=True, exist_ok=True)
         df.to_csv(args.csv_name + ".csv", index=False)
 
-        # with open(f'{args.csv_name}.csv', 'w+', newline='') as f:
-        #     write = csv.writer(f)
-        #     write.writerow(["Epochs"]+num_total_episode_list)
-        #     write.writerow(["Reward"]+episodes_reward_list)
-        #     write.writerow(["seq2seqLoss"] + episodes_seq2seq_loss_list)
-        #     for key, value in episodes_info_result_dic.items(): # record system_accumulated_waiting_times,  system_total_stopped, system_mean_waiting_time, system_mean_speed
-        #         write.writerow([key]+value)
 
 
         if avg_attention_score_csv_data is not None:
@@ -517,7 +466,6 @@ def run_sequential(args):
                 # single_sample_attn_key_2Dlist.append(single_sample_attn_key)
                 # single_sample_attn_logit_2Dlist.append(single_sample_attn_logit)
 
-
                 with open(f'{args.csv_name}_Attention_score.csv',
                           'w+', newline='') as f:
                     writer = csv.writer(f)
@@ -529,26 +477,6 @@ def run_sequential(args):
                         writer.writerow(header)
                         for row in avg_attention_score_2Dlist[i]:
                             writer.writerow(row)
-                        # header = [f"Neighbor_{i}" for i in range(len(single_sample_attention_score_csv_data))] + ["Single Sample Attention Score"]
-                        # writer.writerow(header)
-                        # for row in single_sample_attention_score_2Dlist[i]:
-                        #     writer.writerow(row)
-                        # header = [f"Neighbor_{i}" for i in range(len(single_sample_attention_score_csv_data))] + ["Single Sample encoded_hidden_states"]
-                        # writer.writerow(header)
-                        # for row in single_sample_encoded_hidden_states_2Dlist[i]:
-                        #     writer.writerow(row)
-                        # header = [f"Neighbor_{i}" for i in range(len(single_sample_attention_score_csv_data))] + ["Single Sample attn_query"]
-                        # writer.writerow(header)
-                        # for row in single_sample_attn_query_2Dlist[i]:
-                        #     writer.writerow(row)
-                        # header = [f"Neighbor_{i}" for i in range(len(single_sample_attention_score_csv_data))] + ["Single Sample attn_key"]
-                        # writer.writerow(header)
-                        # for row in single_sample_attn_key_2Dlist[i]:
-                        #     writer.writerow(row)
-                        # header = [f"Neighbor_{i}" for i in range(len(single_sample_attention_score_csv_data))] + ["Single Sample attn_logit"]
-                        # writer.writerow(header)
-                        # for row in single_sample_attn_logit_2Dlist[i]:
-                        #     writer.writerow(row)
     runner.close_env()
 
 

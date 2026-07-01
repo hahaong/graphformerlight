@@ -50,9 +50,6 @@ class EpisodeRunner:
 
         self.mac = mac
 
-    def setupInformerBuffer(self):
-        self.informerBuffer = InformerBuffer(self.num_agents, 720, self.obs_dim)
-
     def get_env_info(self,global_state_setting_num):
 
         return self.env.aec_env.get_env_info(global_state_setting_num)
@@ -103,11 +100,6 @@ class EpisodeRunner:
                     "avail_actions": np.expand_dims(avail_actions, axis=0)  # Shape: (1, n_agents, max_actions)
             }
 
-            # pre_transition_data = {
-            #         "state": [self.env.aec_env.get_state(self.args.global_state_setting_num)],
-            #         "obs": [obs],
-            # }
-
 
             if seq2seq:
                 pre_transition_data["informer_obs"] =np.expand_dims(obs,axis=0)
@@ -146,45 +138,6 @@ class EpisodeRunner:
                 seq_buffer.update(pre_transition_data, ts=self.t)
 
 
-            # if seq2seq:
-            #     pre_transition_data["informer_obs"] = [obs]
-            #     obs_dim = pre_transition_data["informer_obs"][0].shape[-1]
-            #
-            # seq_buffer.update(pre_transition_data, ts=self.t, is_pre_transition_data_first_obs=True) # insert current transition data to informer stack memory
-            #
-            # if Informer_agent_models: # has informer model, ready to predict
-            #     pred_obs_list = []
-            #
-            #     informer_seq_obs_buffer, informer_seq_env_time_index_buffer = seq_buffer.get_informer_seq_buffer()  # [agent,20 (previous 19 steps + 1 current step),obs_dim] # [agent,20,1]
-            #     for agent_i, agent_informer_model in enumerate(Informer_agent_models):
-            #         informer_obs_data = informer_seq_obs_buffer[agent_i]
-            #         informer_seq_env_time_index_data = informer_seq_env_time_index_buffer[agent_i]
-            #         pred_obs = agent_informer_model.predict(informer_obs_data,informer_seq_env_time_index_data) #[1,1,12]
-            #         pred_obs_list.append(pred_obs)
-            #     stacked = np.stack(pred_obs_list,axis=0) # [total_num_agent, batch=1, agent=1, obs_dim=12]
-            #     predicted_obs = stacked.reshape(len(Informer_agent_models),obs_dim*self.args.informer_pred_len) # (9,12) need modify
-            #
-            #     # Concate Ways
-            #     obs_ori = pre_transition_data["informer_obs"][0]
-            #     if informer_process_obs_ways == "concat":
-            #         new_obs = np.concatenate([obs_ori,predicted_obs],axis=1)
-            #
-            #     # Avg Ways
-            #     if informer_process_obs_ways == "avg":
-            #         new_obs = np.mean(np.stack([obs_ori, predicted_obs], axis=0), axis=0)
-            #
-            #     # Replace Ways
-            #     if informer_process_obs_ways == "replace":
-            #         new_obs = predicted_obs
-            #
-            #     pre_transition_data = {
-            #         "obs": new_obs,
-            #     }
-            #     seq_buffer.update(pre_transition_data, ts=self.t)
-
-
-
-
             # Pass the entire batch of experiences up till now to the agents
             # Receive the actions for each agent at this timestep in a batch of size 1
             actions = self.mac.select_actions(seq_buffer.seq_data, t_ep=self.t, t_env=self.t_env, test_mode=test_mode)
@@ -206,8 +159,9 @@ class EpisodeRunner:
             episode_return += total_reward
 
             isDone = all(list(multi_truncation.values()))
-            if(isDone):
-                terminated = True
+            terminated = isDone
+            if terminated:
+                info.get("mfd_critical_n")
 
             post_transition_data = {
                 "actions": actions,
@@ -225,12 +179,6 @@ class EpisodeRunner:
                 systemTotalStoppedList.append(next(iter(info.values()))["system_total_stopped"])
                 systemMeanWaitingTimeList.append(next(iter(info.values()))["system_mean_waiting_time"])
                 systemMeanSpeedList.append(next(iter(info.values()))["system_mean_speed"])
-
-                # if isDone: # record last step's info to a csv file, will append to reward csv file
-                #     resultDic["system_accumulated_waiting_times"] = next(iter(info.values()))["system_accumulated_waiting_times"]
-                #     resultDic["system_total_stopped"] = next(iter(info.values()))["system_total_stopped"]
-                #     resultDic["system_mean_waiting_time"] = next(iter(info.values()))["system_mean_waiting_time"]
-                #     resultDic["system_mean_speed"] = next(iter(info.values()))["system_mean_speed"]
 
             if test_mode:
                 systemTotalWaitingTimeList.append(next(iter(info.values()))["system_accumulated_waiting_times"])
@@ -270,45 +218,3 @@ class EpisodeRunner:
     def _log(self, returns, stats, prefix):
        pass
 
-
-class InformerBuffer:
-    def __init__(self, num_agents, seq_number, state_dim):
-        # Shape: [num_agent, seq_number, state_dim]
-        self.memory = th.zeros((num_agents, seq_number, state_dim), dtype=th.float32)
-        self.num_agents = num_agents
-        self.seq_number = seq_number
-        self.state_dim = state_dim
-
-    def store_episode(self, episode_tensor):
-        """
-        Store one episode for all agents.
-        episode_tensor: [num_agent, seq_number, state_dim]
-        """
-        if episode_tensor.shape != (self.num_agents, self.seq_number, self.state_dim):
-            raise ValueError(
-                f"Expected shape {(self.num_agents, self.seq_number, self.state_dim)}, got {episode_tensor.shape}")
-        self.memory = episode_tensor.clone()
-
-    def prepare_batch(self, agent_idx, enc_len=20, dec_len=20, pred_len=1,  batch_size=16):
-        """
-        Prepare a batch for training from a specific agent's data.
-        Returns:
-            enc_batch: [batch_size, enc_len, state_dim]
-            dec_batch: [batch_size, dec_len, state_dim]
-        """
-        enc_batch = []
-        dec_batch = []
-
-        max_start = self.seq_number - (dec_len + pred_len)
-
-        for _ in range(batch_size):
-            start_idx = random.randint(0, max_start)
-            enc_seq = self.memory[agent_idx, start_idx:start_idx + enc_len, :]
-            # dec_seq = self.memory[agent_idx, start_idx + enc_len:start_idx + enc_len + dec_len, :]
-            enc_batch.append(enc_seq)
-            # dec_batch.append(dec_seq)
-
-        enc_batch = th.stack(enc_batch)  # [batch_size, enc_len, state_dim]
-        dec_batch = th.stack(dec_batch)  # [batch_size, dec_len, state_dim]
-
-        return enc_batch, dec_batch

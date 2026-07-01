@@ -111,34 +111,6 @@ class ReplayBuffer():
                 self.informer_seq_data.transition_data["informer_obs_time_index"] = th.zeros((n_agent,self.informer_seq_len, 1), dtype=th.int32, device=self.device)
 
 
-    # def append_informer_seq_data(self,new_obs_data, current_env_time_index):
-    #     """
-    #             Append new_obs_data: shape [n_agents, obs_dim]
-    #     """
-    #     dtype = self.scheme["informer_obs"].get("dtype", th.float32)
-    #     new_obs_data = th.tensor(new_obs_data, dtype=dtype, device=self.device)
-    #
-    #     # if self.informer_seq_current_len < self.informer_seq_len:
-    #     #     # If buffer is not full, insert at current_len index
-    #     #     self.informer_seq_data.transition_data["informer_obs"][:, self.informer_seq_current_len, :] = new_obs_data
-    #     #     self.informer_seq_data.transition_data["informer_obs_time_index"][:, self.informer_seq_current_len, 0] = current_env_time_index
-    #     #
-    #     #     self.informer_seq_current_len += 1
-    #     # else:
-    #     #     # Buffer full: shift data left and put new_data at last index
-    #     #     self.informer_seq_data.transition_data["informer_obs"][:, :-1, :] = self.informer_seq_data.transition_data["informer_obs"][:, 1:, :]
-    #     #     self.informer_seq_data.transition_data["informer_obs"][:, -1, :] = new_obs_data
-    #     #
-    #     #     self.informer_seq_data.transition_data["informer_obs_time_index"][:, :-1, 0] = self.informer_seq_data.transition_data["informer_obs_time_index"][:, 1:, 0]
-    #     #     self.informer_seq_data.transition_data["informer_obs_time_index"][:, -1, 0] = current_env_time_index
-    #
-    #     # First in last out memory
-    #     self.informer_seq_data.transition_data["informer_obs"][:, :-1, :] = self.informer_seq_data.transition_data["informer_obs"][:, 1:, :]
-    #     self.informer_seq_data.transition_data["informer_obs"][:, -1, :] = new_obs_data
-    #
-    #     self.informer_seq_data.transition_data["informer_obs_time_index"][:, :-1, 0] = self.informer_seq_data.transition_data["informer_obs_time_index"][:, 1:, 0]
-    #     self.informer_seq_data.transition_data["informer_obs_time_index"][:, -1, 0] = current_env_time_index
-
     def get_informer_seq_buffer(self):
         """
         Return the current buffer tensor (full length)
@@ -162,12 +134,6 @@ class ReplayBuffer():
         self.buffer_index = self.buffer_index + 1
         self.episodes_in_buffer = min(self.buffer_index, self.buffer_size-1)
 
-
-    # def get_new_seq_buffer(self): # -> (action : 1,seq,num_agent,dim, .....)
-    #     for field_key, field_info in self.scheme:
-    #         self.seq_data[field_key] = th.zeros((1,self.max_seq_length, *field_info["vshape"]), dtype=field_info.get("dtype",th.float32), device=self.device)
-    #     self.seq_data["batch_size"] = 1
-    #     return self.seq_data
 
     def can_sample(self, batch_size):
         return self.episodes_in_buffer >= batch_size
@@ -204,8 +170,6 @@ class ReplayBuffer():
                 self.seq_data.transition_data[new_k][0, ts] = v.view_as(self.seq_data.transition_data[new_k][0, ts])
 
 
-    # def get_single_seq_data(self, k, ts):
-    #     return self.seq_data.transition_data[k][0,ts]
 
     def sample(self, batch_size):
         # assert self.can_sample(batch_size)
@@ -231,16 +195,6 @@ class ReplayBuffer():
         return new_data
 
 
-
-        # if self.is_episode_data == True:
-        #     pass
-        # elif self.is_episode_data == False:
-        #     if self.episodes_in_buffer <= batch_size:
-        #         return self.data.transition_data[:batch_size]
-        #     else:
-        #         # Uniform sampling only atm
-        #         ep_ids = np.random.choice(self.episodes_in_buffer, batch_size, replace=False)
-        #         return self.data.transition_data[ep_ids]
 
     def __repr__(self):
         return "ReplayBuffer. {}/{} episodes. Keys:{} Groups:{}".format(self.episodes_in_buffer,
