@@ -185,7 +185,7 @@ class QLearner:
         grad_norm = th.nn.utils.clip_grad_norm_(self.params, self.args.grad_norm_clip)
         self.optimiser.step()
 
-        # Hard update every 200 episodes original
+        # Hard update
         if (episode_num + 1 - self.last_target_update_episode) / self.args.target_update_interval >= 1.0:
             self._update_targets()
             self.last_target_update_episode = episode_num

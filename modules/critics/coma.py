@@ -60,9 +60,9 @@ class COMACritic(nn.Module):
 
     def _get_input_shape(self, scheme):
         # state
-        input_shape = scheme["state"]["vshape"]
+        input_shape = scheme["state"]["vshape"][0]
         # observation
-        input_shape += scheme["obs"]["vshape"]
+        input_shape += scheme["obs"]["vshape"][0]
         # actions and last actions
         input_shape += scheme["actions_onehot"]["vshape"][0] * self.n_agents * 2
         # agent id
