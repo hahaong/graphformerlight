@@ -11,7 +11,7 @@ runner: "episode"
 buffer_size: 150
 
 # update the target network every {} episodes
-target_update_interval: 50
+target_update_interval: 15
 
 # use the Q_Learner to train
 agent: "mlp"

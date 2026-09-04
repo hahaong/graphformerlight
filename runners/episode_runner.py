@@ -237,7 +237,7 @@ class EpisodeRunner:
             self.t += 1
 
             if not test_mode:
-                self.t_env += self.t
+                self.t_env += 1
                 systemAccumulatedWaitingTimeList.append(next(iter(info.values()))["system_accumulated_waiting_times"])
                 systemTotalStoppedList.append(next(iter(info.values()))["system_total_stopped"])
                 systemMeanWaitingTimeList.append(next(iter(info.values()))["system_mean_waiting_time"])

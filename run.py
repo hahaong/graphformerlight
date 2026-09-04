@@ -443,9 +443,13 @@ def run_sequential(args):
 
         metrics = {
             "Epochs":num_total_episode_list,
-            "Reward":episodes_reward_list,
+            "Reward":episodes_reward_list, # sum of agent's independent reward * (total_step / action interval)
             "seq2seqLoss": [0] * len(num_total_episode_list) if (args.name != "graphmix" or args.seq2seq == False) else episodes_seq2seq_loss_list,
             **episodes_info_result_dic
+            #   system_accumulated_waiting_times = using SUMO built in accumulated waiting function, extract the last step (3600/3600) accumulated waiting time
+            #   system_total_stopped = records total vehicle stopped in the SUMO network in every action interval , and at the last step (3600/3600) calculate the mean from the recorded total stopped list
+            #   system_mean_waiting_time = records mean waiting time in the SUMO network in every action interval , and at the last step (3600/3600) calculate the mean from the recorded mean waiting time list
+            #   system_mean_speed = records mean speed in the SUMO network in every action interval , and at the last step (3600/3600) calculate the mean from the recorded mean speed list
         }
 
         df = pd.DataFrame(metrics)
