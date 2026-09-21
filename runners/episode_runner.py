@@ -37,9 +37,6 @@ class EpisodeRunner:
         self.train_stats = {}
         self.test_stats = {}
 
-        # Log the first run
-        self.log_train_stats_t = -1000000
-
 
     def setup(self, scheme, groups, preprocess, mac):
         self.num_agent = groups["agents"]#informer
@@ -177,7 +174,7 @@ class EpisodeRunner:
                 for agent_i, agent_informer_model in enumerate(Informer_agent_models):
                     informer_obs_data = informer_seq_obs_buffer[agent_i]
                     informer_seq_env_time_index_data = informer_seq_env_time_index_buffer[agent_i]
-                    pred_obs = agent_informer_model.predict(informer_obs_data,informer_seq_env_time_index_data) #[1,1,12]
+                    pred_obs = agent_informer_model.predict(informer_obs_data,informer_seq_env_time_index_data)
                     pred_obs_list.append(pred_obs)
                 stacked = np.stack(pred_obs_list,axis=0) # [total_num_agent, batch=1, agent=1, obs_dim=12]
                 predicted_obs = stacked.reshape(len(Informer_agent_models),obs_dim*self.args.informer_pred_len) # (9,12) need modify
@@ -236,45 +233,20 @@ class EpisodeRunner:
 
             self.t += 1
 
-            if not test_mode:
-                self.t_env += 1
-                systemAccumulatedWaitingTimeList.append(next(iter(info.values()))["system_accumulated_waiting_times"])
-                systemTotalStoppedList.append(next(iter(info.values()))["system_total_stopped"])
-                systemMeanWaitingTimeList.append(next(iter(info.values()))["system_mean_waiting_time"])
-                systemMeanSpeedList.append(next(iter(info.values()))["system_mean_speed"])
+            self.t_env += 1
+            systemAccumulatedWaitingTimeList.append(next(iter(info.values()))["system_accumulated_waiting_times"])
+            systemTotalStoppedList.append(next(iter(info.values()))["system_total_stopped"])
+            systemMeanWaitingTimeList.append(next(iter(info.values()))["system_mean_waiting_time"])
+            systemMeanSpeedList.append(next(iter(info.values()))["system_mean_speed"])
 
-            if test_mode:
-                systemTotalWaitingTimeList.append(next(iter(info.values()))["system_accumulated_waiting_times"])
-                systemTotalStoppedList.append(next(iter(info.values()))["system_total_stopped"])
-                systemMeanWaitingTimeList.append(next(iter(info.values()))["system_mean_waiting_time"])
-                systemMeanSpeedList.append(next(iter(info.values()))["system_mean_speed"])
+
 
         # --- MODULE 1 INTEGRATION: EXECUTE OLS CALIBRATION AT EPISODE END ---
         # The episode loop has finished; the second-by-second data arrays inside self.env are full.
         # We run the non-linear regression fit now to update the value for the next episode.
         # updated_nc_threshold = mfd_calibrator.execute_episodic_calibration()
 
-        if test_mode:
-            self.episode_list.append(episode)
-            self.systemTotalWaitingTime2DList.append(systemTotalWaitingTimeList)
-            self.systemTotalStopped2DList.append(systemTotalStoppedList)
-            self.systemMeanWaitingTime2DList.append(systemMeanWaitingTimeList)
-            self.systemMeanSpeed2DList.append(systemMeanSpeedList)
 
-            with open(f'csv_plot/{self.args.csv_name}_System_Total_Waiting_Time_totalStopped_meanWaitingTime_meanSpeed.csv',
-                      'w+', newline='') as f:
-                write = csv.writer(f)
-                total_rows = len(self.systemTotalWaitingTime2DList)
-
-                write.writerow(list(range(len(systemTotalWaitingTimeList))))
-
-                for i in range(total_rows):
-                    num_episode_string = ["Episode", self.episode_list[i]]
-                    write.writerow(num_episode_string)
-                    write.writerow(["system_accumulated_waiting_times"] + self.systemTotalWaitingTime2DList[i])
-                    write.writerow(["system_total_stopped"] + self.systemTotalStopped2DList[i])
-                    write.writerow(["system_mean_waiting_time"]+self.systemMeanWaitingTime2DList[i])
-                    write.writerow(["system_mean_speed"] + self.systemMeanSpeed2DList[i])
 
         resultDic["system_accumulated_waiting_times"] = systemAccumulatedWaitingTimeList[-1]
         resultDic["system_total_stopped"] = np.mean(systemTotalStoppedList)
