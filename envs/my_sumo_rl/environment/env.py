@@ -361,8 +361,8 @@ class SumoEnvironment(gym.Env):
             self.close()
             self.save_csv(self.out_csv_name, self.episode)
 
-            if self.episode % 10 == 0:
-                self.save_mfd_csv(self.out_csv_name, self.episode)
+            # if self.episode % 10 == 0:
+            #     self.save_mfd_csv(self.out_csv_name, self.episode)
         self.episode += 1
         self.metrics = []
         self.mfd_data = []
