@@ -106,7 +106,7 @@ class Exp_Informer():
         return criterion
 
 
-    def train(self, episode_batch_obs_data, agent_index): # receive data here # [1,24,9,12]
+    def train(self, episode_batch_obs_data, agent_index): # receive data here # [1,step + label_len, num_agent, obs_dim] [1,739,16,12]
         model_optim = self._select_optimizer()
         criterion = self._select_criterion()
         seq_len = self.seq_len
@@ -117,10 +117,11 @@ class Exp_Informer():
         max_start = episode_limit - seq_len - pred_len
         n_agents = self.args.n_agents
 
-
-
+        avg_mse, avg_mae, avg_rmse = 0,0,0
         for epoch in range(2):  # train informer epoch times
             train_loss = []
+            all_preds = np.array([])
+            all_trues = np.array([])
             batch_x, batch_y, batch_x_mark, batch_y_mark = [], [], [], []
 
             # Sample enough times to cover the data volume of all agents
@@ -170,12 +171,17 @@ class Exp_Informer():
             epoch_loss.append(loss.item())
             loss.backward()
             model_optim.step()
-            train_loss.append(np.average(epoch_loss))
 
-        train_loss = np.average(train_loss)
-        # print("Informer Innner Epoch: {} | Training Loss {}".format(epoch, train_loss))
+            # Concatenate predictions and targets across inner epochs
+            all_preds = np.append(all_preds, pred.detach().cpu().numpy())
+            all_trues = np.append(all_trues, true.detach().cpu().numpy())
 
-        return self.model, train_loss
+            # Calculate metrics
+            avg_mse = float(np.mean((all_preds - all_trues) ** 2))
+            avg_mae = float(np.mean(np.abs(all_preds - all_trues)))
+            avg_rmse = float(np.sqrt(avg_mse))
+
+        return self.model, avg_mse, avg_mae, avg_rmse
 
     def predict(self, obs_data, env_time_index_data):
         # obs_data  [enc_len, state_dim]
@@ -305,7 +311,7 @@ def run_sequential(args):
     }
 
                                                                  #500              #env seq length
-    buffer = ReplayBuffer(scheme, groups, args.batch_size, args.buffer_size, env_info["episode_limit"], args.seq2seq, args.informer_seq_len, args.informer_pred_len, args.on_policy_learning,
+    buffer = ReplayBuffer(scheme, groups, args.batch_size, args.buffer_size, env_info["episode_limit"], args.seq2seq, args.informer_seq_len, args.informer_pred_len,
                           preprocess=preprocess,
                           device="cpu" if args.buffer_cpu_only else args.device, learning_device = "cpu" if args.device == "cpu" else args.device)
 
@@ -379,6 +385,9 @@ def run_sequential(args):
 
     episodes_reward_list = []
     episodes_seq2seq_loss_list = []
+    episodes_seq2seq_mae_list = []
+    episodes_seq2seq_rmse_list = []
+
     episodes_info_result_dic = {}
     while episode < args.t_max: # 300 epochs
         time_start = time.time()
@@ -387,27 +396,42 @@ def run_sequential(args):
         # Run for a whole episode at a time
 
         if args.seq2seq == True:
-            if episode < 1: # < 4, informer turn off to let the informer train a bit before we deploy
+            if episode < 0: # < 4, informer turn off to let the informer train a bit before we deploy
                 episode_batch, episode_reward,resultDic = runner.run(test_mode=False,informer_process_obs_ways=informer_process_obs_ways, seq2seq=args.seq2seq) # return seq_batch
             else:# informer turn on
-                episode_batch, episode_reward,resultDic = runner.run(Informer_agent_models, test_mode=False,informer_process_obs_ways=informer_process_obs_ways,seq2seq=args.seq2seq) # return seq_batch
-            episode_batch_informer_obs_data = episode_batch.transition_data["informer_obs"].clone()
+                episode_batch, episode_reward,resultDic = runner.run(Informer_agent_models, test_mode=False,episode=episode,informer_process_obs_ways=informer_process_obs_ways,seq2seq=args.seq2seq) # return seq_batch
+                buffer.insert_episode_batch(episode_batch.transition_data)
+            if args.seq2seq_off_policy_learning == True:
+                informer_obs_data = buffer.sample(args.batch_size, False).transition_data["informer_obs"]
+            else:
+                informer_obs_data = episode_batch.transition_data["informer_obs"].clone()
             #Informer start
             time_informer_start = time.time()
             train_losses = []
+            train_maes, train_rmses = [], []
             train_losses_all_agent_single_value = 0
 
             if args.seq2seq_paramsharing == True:
                 # Train the shared model ONCE using data from all agents
-                _, train_loss = shared_informer_model.train(episode_batch_informer_obs_data,0)
+                _, train_loss, train_mae , train_rmse= shared_informer_model.train(informer_obs_data,0)
                 train_losses.append(train_loss)
+                train_maes.append(train_mae)
+                train_rmses.append(train_rmse)
             else:
                 for agent_num in range (args.n_agents):
                     # call agent's informer
-                    _,train_loss = Informer_agent_models[agent_num].train(episode_batch_informer_obs_data,agent_num)
+                    _,train_loss, train_mae , train_rmse = Informer_agent_models[agent_num].train(informer_obs_data,agent_num)
                     train_losses.append(train_loss)
+                    train_maes.append(train_mae)
+                    train_rmses.append(train_rmse)
+
             train_losses_all_agent_single_value = np.average(train_losses)
+            avg_train_mae = float(np.average(train_maes))
+            avg_train_rmse = float(np.average(train_rmses))
+
             episodes_seq2seq_loss_list.append(train_losses_all_agent_single_value)
+            episodes_seq2seq_mae_list.append(avg_train_mae)
+            episodes_seq2seq_rmse_list.append(avg_train_rmse)
             time_informer_end = time.time()
             print("Informer training time for all agents:{}s".format(time_informer_end - time_informer_start))
             print("Informer training loss for all agents(avg):{}".format(train_losses_all_agent_single_value))
@@ -415,11 +439,10 @@ def run_sequential(args):
         else:
             episode_batch, episode_reward, resultDic = runner.run(test_mode=False)  # return seq_batch
 
-        buffer.insert_episode_batch(episode_batch.transition_data)
 
         # if buffer.can_sample(args.batch_size):
         for i in range(args.num_epochs): # inner training loop # 1 as value
-            episode_sample = buffer.sample(args.batch_size)
+            episode_sample = buffer.sample(args.batch_size, not args.rl_off_policy_learning )
 
             # if episode_sample.device != args.device:
             #     episode_sample.to(args.device)
@@ -445,6 +468,8 @@ def run_sequential(args):
             "Epochs":num_total_episode_list,
             "Reward":episodes_reward_list, # sum of agent's independent reward * (total_step / action interval)
             "seq2seqLoss": [0] * len(num_total_episode_list) if (args.name != "graphmix" or args.seq2seq == False) else episodes_seq2seq_loss_list,
+            "seq2seq_MAE": episodes_seq2seq_mae_list if args.seq2seq else [0] * len(num_total_episode_list),
+            "seq2seq_RMSE": episodes_seq2seq_rmse_list if args.seq2seq else [0] * len(num_total_episode_list),
             **episodes_info_result_dic
             #   system_accumulated_waiting_times = using SUMO built in accumulated waiting function, extract the last step (3600/3600) accumulated waiting time
             #   system_total_stopped = records total vehicle stopped in the SUMO network in every action interval , and at the last step (3600/3600) calculate the mean from the recorded total stopped list

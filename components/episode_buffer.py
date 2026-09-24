@@ -4,7 +4,7 @@ from types import SimpleNamespace as SN
 
 
 class ReplayBuffer():
-    def __init__(self, scheme, groups, batch_size,buffer_size, max_seq_length, seq2seq=False, informer_seq_len=20, informer_pred_len = 1, on_policy_learning=False, preprocess=None, device="cpu", single_episode_transition_data=False, learning_device="cpu"):
+    def __init__(self, scheme, groups, batch_size,buffer_size, max_seq_length, seq2seq=False, informer_seq_len=20, informer_pred_len = 1, preprocess=None, device="cpu", single_episode_transition_data=False, learning_device="cpu"):
         self.scheme = scheme
         self.groups = groups
         self.is_episode_data = scheme.get("is_episode_data",False) # episode data use normal MLP, transition data use GRU
@@ -15,7 +15,6 @@ class ReplayBuffer():
         self.informer_seq_len = informer_seq_len # for informer
         self.informer_pred_len = informer_pred_len # for informer
         self.informer_obs_duplicate_time = informer_pred_len+1 # for informer
-        self.on_policy_learning = on_policy_learning
         self.preprocess = preprocess
         self.device = device
         self.learning_device = learning_device
@@ -132,8 +131,8 @@ class ReplayBuffer():
                 self.data.transition_data[k][self.episodes_in_buffer] = v
 
         self.buffer_index = self.buffer_index + 1
-        self.episodes_in_buffer = min(self.buffer_index, self.buffer_size-1)
-
+        self.episodes_in_buffer = min(self.buffer_index, self.buffer_size)
+ 
 
     def can_sample(self, batch_size):
         return self.episodes_in_buffer >= batch_size
@@ -171,10 +170,10 @@ class ReplayBuffer():
 
 
 
-    def sample(self, batch_size):
+    def sample(self, batch_size, onPolicy=True):
         # assert self.can_sample(batch_size)
         current_batch_size = 0
-        if self.on_policy_learning == True:
+        if onPolicy == True:
             ep_ids = [self.episodes_in_buffer - 1]
             current_batch_size = 1
         else:

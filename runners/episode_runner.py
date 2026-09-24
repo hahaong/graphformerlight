@@ -3,6 +3,8 @@ from functools import partial
 from components.episode_buffer import ReplayBuffer
 from components.mfd_calibrator import DynamicMFDCalibrator
 import numpy as np
+from pathlib import Path
+import os
 import torch as th
 import csv
 import random
@@ -21,9 +23,12 @@ class EpisodeRunner:
         self.env = env_REGISTRY[self.args.env](**self.args.env_args)
 
         self.episode_limit = args.env_args['num_seconds'] // args.env_args['delta_time']
+        # Fixed step in the episode to record the heatmap snapshot (e.g., step 360)
+        self.snapshot_step = self.episode_limit // 2
         self.t = 0
 
         self.t_env = 0 # record total how many steps have run up till now, to set action epsilon exploration value
+
 
         self.systemTotalWaitingTime2DList = []
         self.systemTotalStopped2DList = []
@@ -148,53 +153,134 @@ class EpisodeRunner:
         systemMeanWaitingTimeList = []
         systemMeanSpeedList = []
 
+        # =========================================================================
+        # Evaluation Trackers: Step-Averaged Pred vs Obs & Step-Wise Errors
+        # =========================================================================
+        pending_predictions = {}
+        step_aggregated_records = []
+        all_step_mses = []
+        all_step_maes = []
+
         while not terminated:
-            obs = self.env.aec_env.get_observations()
+            obs = self.env.aec_env.get_observations()  # Shape: (n_agents, obs_dim)
             state = self.env.aec_env.get_state(self.args.global_state_setting_num)
-            # Fetch available actions from your environment
             avail_actions = self.env.aec_env.get_avail_actions()
 
             pre_transition_data = {
-                    "state": state.reshape(1,-1),
-                    "obs": np.expand_dims(obs,axis=0),
-                    "avail_actions": np.expand_dims(avail_actions, axis=0)  # Shape: (1, n_agents, max_actions)
+                "state": state.reshape(1, -1),
+                "obs": np.expand_dims(obs, axis=0),
+                "avail_actions": np.expand_dims(avail_actions, axis=0)
             }
 
-
             if seq2seq:
-                pre_transition_data["informer_obs"] =np.expand_dims(obs,axis=0)
+                pre_transition_data["informer_obs"] = np.expand_dims(obs, axis=0) # [1,16,12]
                 obs_dim = pre_transition_data["informer_obs"].shape[-1]
 
-            seq_buffer.update(pre_transition_data, ts=self.t, is_pre_transition_data_first_obs=True) # insert current transition data to informer stack memory
+            seq_buffer.update(pre_transition_data, ts=self.t, is_pre_transition_data_first_obs=True)
 
+            # =====================================================================
+            # 1. Match Current Observation with Stored Pending Predictions
+            # =====================================================================
+            if seq2seq and (self.t in pending_predictions):
+                # Average true observations across all agents and feature channels for this step
+                mean_obs = float(np.mean(obs))
+
+                for (orig_step, horizon_k, pred_for_now) in pending_predictions[self.t]:
+                    # Average predicted observations across all agents and feature channels
+                    mean_pred = float(np.mean(pred_for_now))
+
+                    step_mae = abs(mean_obs - mean_pred)
+                    step_mse = (mean_obs - mean_pred) ** 2
+
+                    all_step_maes.append(step_mae)
+                    all_step_mses.append(step_mse)
+
+                    # Only record step details if this episode is on the 10-episode logging interval
+                    if ((episode+1) % 10 == 0) or (episode == (self.args.t_max - 1)):
+                        step_aggregated_records.append([
+                            episode, self.t, horizon_k,
+                            round(mean_obs, 4), round(mean_pred, 4),
+                            round(step_mae, 4), round(step_mse, 4), round(step_mse**0.5, 4)
+                        ])
+
+                    # =============================================================
+                    # Heatmap Snapshot Trigger:
+                    # Current time == 360 AND predicted from 360-1 (horizon_k == 1)
+                    # =============================================================
+                    if (((episode+1) % 10 == 0) or (episode == (self.args.t_max - 1))) and (self.t == self.snapshot_step):
+
+                        obs_matrix = np.array(obs)  # Shape: (n_agents, obs_dim)
+                        pred_matrix = np.array(pred_for_now)  # Shape: (n_agents, obs_dim)
+
+                        obs_csv_path = f"{self.args.csv_name}_heatmap_obs_all_episodes.csv"
+                        pred_csv_path = f"{self.args.csv_name}_heatmap_pred_all_episodes.csv"
+                        Path(Path(obs_csv_path).parent).mkdir(parents=True, exist_ok=True)
+
+                        lane_headers = [f"Lane_{j}" for j in range(obs_dim)]
+                        csv_header = ["Episode", "Step_Observed", "Step_Predicted_From", "Agent_ID"] + lane_headers
+
+                        write_obs_header = not os.path.exists(obs_csv_path)
+                        write_pred_header = not os.path.exists(pred_csv_path)
+
+                        obs_rows = []
+                        pred_rows = []
+                        for agent_idx in range(len(self.env.agents)):
+                            agent_name = f"Agent_{agent_idx}"
+                            obs_rows.append([episode, self.t, orig_step, agent_name] + list(obs_matrix[agent_idx]))
+                            pred_rows.append(
+                                [episode, self.t, orig_step, agent_name] + list(pred_matrix[agent_idx]))
+
+                        with open(obs_csv_path, 'a', newline='') as f:
+                            writer = csv.writer(f)
+                            if write_obs_header:
+                                writer.writerow(csv_header)
+                            writer.writerows(obs_rows)
+
+                        with open(pred_csv_path, 'a', newline='') as f:
+                            writer = csv.writer(f)
+                            if write_pred_header:
+                                writer.writerow(csv_header)
+                            writer.writerows(pred_rows)
+
+                        print(
+                            f"[Snapshot Logged] Ep {episode}: Saved Obs at Step {self.t} vs Pred made at Step {orig_step} to consolidated heatmap CSVs.")
+
+
+                del pending_predictions[self.t]
+
+            # =====================================================================
+            # 2. Informer Inference & Queue Future Steps for Verification
+            # =====================================================================
             if Informer_agent_models: # has informer model, ready to predict
                 pred_obs_list = []
-
                 informer_seq_obs_buffer, informer_seq_env_time_index_buffer = seq_buffer.get_informer_seq_buffer()  # [agent,20 (previous 19 steps + 1 current step),obs_dim] # [agent,20,1]
+
                 for agent_i, agent_informer_model in enumerate(Informer_agent_models):
                     informer_obs_data = informer_seq_obs_buffer[agent_i]
                     informer_seq_env_time_index_data = informer_seq_env_time_index_buffer[agent_i]
                     pred_obs = agent_informer_model.predict(informer_obs_data,informer_seq_env_time_index_data)
                     pred_obs_list.append(pred_obs)
-                stacked = np.stack(pred_obs_list,axis=0) # [total_num_agent, batch=1, agent=1, obs_dim=12]
+                stacked = np.stack(pred_obs_list,axis=0) # [total_num_agent, batch=1, pred_len?, obs_dim=12]
                 predicted_obs = stacked.reshape(len(Informer_agent_models),obs_dim*self.args.informer_pred_len) # (9,12) need modify
 
-                # Concate Ways
+                # Store predictions into future target steps
+                for k in range(self.args.informer_pred_len):
+                    target_t = self.t + (k + 1)
+                    if target_t not in pending_predictions:
+                        pending_predictions[target_t] = []
+                    step_k_pred = stacked[:, 0, k, :]  # shape: (n_agents, obs_dim)
+                    pending_predictions[target_t].append((self.t, k + 1, step_k_pred))
+
+                # Processing observation combinations
                 obs_ori = pre_transition_data["informer_obs"][0]
                 if informer_process_obs_ways == "concat":
                     new_obs = np.concatenate([obs_ori,predicted_obs],axis=1)
-
-                # Avg Ways
                 if informer_process_obs_ways == "avg":
                     new_obs = np.mean(np.stack([obs_ori, predicted_obs], axis=0), axis=0)
-
-                # Replace Ways
                 if informer_process_obs_ways == "replace":
                     new_obs = predicted_obs
 
-                pre_transition_data = {
-                    "obs": new_obs,
-                }
+                pre_transition_data = {"obs": new_obs,}
                 seq_buffer.update(pre_transition_data, ts=self.t)
 
 
@@ -239,14 +325,37 @@ class EpisodeRunner:
             systemMeanWaitingTimeList.append(next(iter(info.values()))["system_mean_waiting_time"])
             systemMeanSpeedList.append(next(iter(info.values()))["system_mean_speed"])
 
+        # =========================================================================
+        # 3. Post-Episode: Write Pred vs Obs CSV Every 10 Episodes
+        # =========================================================================
+        if seq2seq and len(all_step_maes) > 0:
+            ep_mae = float(np.mean(all_step_maes))
+            ep_mse = float(np.mean(all_step_mses))
+            ep_rmse = ep_mse ** 0.5
 
+            # Expose to main training CSV (run.py logs these for every episode)
+            resultDic["seq2seq_runtime_MSE"] = ep_mse
+            resultDic["seq2seq_runtime_MAE"] = ep_mae
+            resultDic["seq2seq_runtime_RMSE"] = ep_rmse
+            print(
+                f"[Runtime Step Summary] Episode {episode} - MAE: {ep_mae:.4f} | MSE: {ep_mse:.4f} | RMSE: {ep_rmse:.4f}")
 
-        # --- MODULE 1 INTEGRATION: EXECUTE OLS CALIBRATION AT EPISODE END ---
-        # The episode loop has finished; the second-by-second data arrays inside self.env are full.
-        # We run the non-linear regression fit now to update the value for the next episode.
-        # updated_nc_threshold = mfd_calibrator.execute_episodic_calibration()
+            # Write step-level details to pred_vs_obs.csv ONLY every 10 episodes (and on the final episode)
+            if ((episode+1) % 10 == 0) or (episode == (self.args.t_max - 1)):
+                pred_vs_obs_csv_path = f"{self.args.csv_name}_pred_vs_obs.csv"
+                Path(Path(pred_vs_obs_csv_path).parent).mkdir(parents=True, exist_ok=True)
 
-
+                write_header = not os.path.exists(pred_vs_obs_csv_path)
+                with open(pred_vs_obs_csv_path, 'a', newline='') as f:
+                    writer = csv.writer(f)
+                    if write_header:
+                        writer.writerow([
+                            "Episode", "Step", "Horizon_Step",
+                            "Mean_Observed", "Mean_Predicted",
+                            "Step_MAE", "Step_MSE", "Step_RMSE"
+                        ])
+                    writer.writerows(step_aggregated_records)
+                print(f"[CSV Saved] Logged {len(step_aggregated_records)} step rows to {pred_vs_obs_csv_path}")
 
         resultDic["system_accumulated_waiting_times"] = systemAccumulatedWaitingTimeList[-1]
         resultDic["system_total_stopped"] = np.mean(systemTotalStoppedList)

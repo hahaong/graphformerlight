@@ -10,7 +10,7 @@ num_epochs : 1 # inner training loop
 env_args: {} # Arguments for the environment
 buffer_cpu_only: False # If true we won't keep all of the replay buffer in vram
 
-use_cuda: True # Use gpu by default unless it isn't available
+use_cuda: False # Use gpu by default unless it isn't available
 
 # --- Logging options ---
 checkpoint_path: "" # Load a checkpoint from this path

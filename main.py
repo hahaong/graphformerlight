@@ -73,7 +73,9 @@ if __name__ == '__main__':
     parser.add_argument('--seq2seq_paramsharing', action="store_true",help='include this if you want informer to works in param sharing mode')
     parser.add_argument('--global_state_setting_num', type=int, default=2,
                         help='can set 0,1,2. 0 means all lanes is concatenate, 1 only consider approach based for example junction1 has 4 approaches, 2 consider traffic light approach')
-    parser.add_argument('--on_policy_learning', action="store_true",
+    parser.add_argument('--rl_off_policy_learning', action="store_true",
+                        help='on-policy or off-policy learning scheme, default is on-policy')
+    parser.add_argument('--seq2seq_off_policy_learning', action="store_true",
                         help='on-policy or off-policy learning scheme, default is on-policy')
     parser.add_argument('--full_attn', action="store_true",
                         help='apply full attention matrix on the GNN, otherwise use masking to mask out disconnected junction, default is mask_attn')
@@ -98,7 +100,8 @@ if __name__ == '__main__':
     informer_pred_len = args.informer_pred_len
     seq2seq_paramsharing = args.seq2seq_paramsharing
     global_state_setting_num = args.global_state_setting_num
-    on_policy_learning = args.on_policy_learning
+    rl_off_policy_learning = args.rl_off_policy_learning
+    seq2seq_off_policy_learning = args.seq2seq_off_policy_learning
     full_attn = args.full_attn
     mixing_embed_dim=args.mixing_embed_dim
     temperature_k=args.temperature_k
@@ -127,7 +130,8 @@ if __name__ == '__main__':
     config_dict["informer_label_len"] = informer_label_len
     config_dict["informer_pred_len"] = informer_pred_len
     config_dict["global_state_setting_num"] = global_state_setting_num
-    config_dict["on_policy_learning"] = on_policy_learning
+    config_dict["rl_off_policy_learning"] = rl_off_policy_learning
+    config_dict["seq2seq_off_policy_learning"] = seq2seq_off_policy_learning
 
     # Load algorithm and env base configs
     env_config = _get_config(env_config, "envs")
